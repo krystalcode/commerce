@@ -87,3 +87,13 @@ function commerce_order_update_8205() {
   $update_manager = \Drupal::entityDefinitionUpdateManager();
   $update_manager->installFieldStorageDefinition('total_paid', 'commerce_order', 'commerce_order', $storage_definition);
 }
+
+/**
+ * Set use_revisions to TRUE for the customer profile type.
+ */
+function commerce_order_update_8206() {
+  $config_factory = \Drupal::configFactory();
+  $config = $config_factory->getEditable('profile.type.customer');
+  $config->set('use_revisions', TRUE);
+  $config->save(TRUE);
+}
