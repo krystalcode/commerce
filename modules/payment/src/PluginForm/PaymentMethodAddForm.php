@@ -5,15 +5,10 @@ namespace Drupal\commerce_payment\PluginForm;
 use Drupal\commerce_payment\CreditCard;
 use Drupal\commerce_payment\Exception\DeclineException;
 use Drupal\commerce_payment\Exception\PaymentGatewayException;
-use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\profile\Entity\Profile;
-use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
-class PaymentMethodAddForm extends PaymentGatewayFormBase implements ContainerInjectionInterface {
+class PaymentMethodAddForm extends PaymentGatewayFormBase {
 
   /**
    * The route match.
@@ -23,44 +18,18 @@ class PaymentMethodAddForm extends PaymentGatewayFormBase implements ContainerIn
   protected $routeMatch;
 
   /**
-   * The store storage.
+   * The entity type manager.
    *
-   * @var \Drupal\commerce_store\StoreStorageInterface
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
-  protected $storeStorage;
-
-  /**
-   * The logger.
-   *
-   * @var \Psr\Log\LoggerInterface
-   */
-  protected $logger;
+  protected $entityTypeManager;
 
   /**
    * Constructs a new PaymentMethodAddForm.
-   *
-   * @param \Drupal\Core\Routing\RouteMatchInterface $route_match
-   *   The route match.
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
-   *   The entity type manager.
-   * @param \Psr\Log\LoggerInterface $logger
-   *   The logger.
    */
-  public function __construct(RouteMatchInterface $route_match, EntityTypeManagerInterface $entity_type_manager, LoggerInterface $logger) {
-    $this->routeMatch = $route_match;
-    $this->storeStorage = $entity_type_manager->getStorage('commerce_store');
-    $this->logger = $logger;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('current_route_match'),
-      $container->get('entity_type.manager'),
-      $container->get('logger.factory')->get('commerce_payment')
-    );
+  public function __construct() {
+    $this->routeMatch = \Drupal::service('current_route_match');
+    $this->entityTypeManager = \Drupal::service('entity_type.manager');
   }
 
   /**
@@ -91,21 +60,35 @@ class PaymentMethodAddForm extends PaymentGatewayFormBase implements ContainerIn
       $form['payment_details'] = $this->buildPayPalForm($form['payment_details'], $form_state);
     }
 
+    /** @var \Drupal\commerce_payment\Entity\PaymentMethodInterface $payment_method */
+    $payment_method = $this->entity;
     /** @var \Drupal\profile\Entity\ProfileInterface $billing_profile */
     $billing_profile = $payment_method->getBillingProfile();
     if (!$billing_profile) {
+      $billing_profile_id = 'customer';
+      $order = $this->routeMatch->getParameter('commerce_order');
+
+      if ($order) {
+        $order_type_storage = $this->entityTypeManager->getStorage('commerce_order_type');
+        /** @var \Drupal\commerce_order\Entity\OrderTypeInterface $order_type */
+        $order_type = $order_type_storage->load($order->bundle());
+        $billing_profile_id = $order_type->getBillingProfileId();
+      }
+
       /** @var \Drupal\profile\Entity\ProfileInterface $billing_profile */
       $billing_profile = Profile::create([
-        'type' => 'customer',
+        'type' => $billing_profile_id,
         'uid' => $payment_method->getOwnerId(),
       ]);
     }
 
-    if ($order = $this->routeMatch->getParameter('commerce_order')) {
+    if ($order) {
       $store = $order->getStore();
     }
     else {
-      $store = $this->storeStorage->loadDefault();
+      /** @var \Drupal\commerce_store\StoreStorageInterface $store_storage */
+      $store_storage = \Drupal::entityTypeManager()->getStorage('commerce_store');
+      $store = $store_storage->loadDefault();
     }
 
     $form['billing_information'] = [
@@ -147,6 +130,8 @@ class PaymentMethodAddForm extends PaymentGatewayFormBase implements ContainerIn
     elseif ($payment_method->bundle() == 'paypal') {
       $this->submitPayPalForm($form['payment_details'], $form_state);
     }
+    /** @var \Drupal\commerce_payment\Entity\PaymentMethodInterface $payment_method */
+    $payment_method = $this->entity;
     $payment_method->setBillingProfile($form['billing_information']['#profile']);
 
     $values = $form_state->getValue($form['#parents']);
@@ -158,11 +143,11 @@ class PaymentMethodAddForm extends PaymentGatewayFormBase implements ContainerIn
       $payment_gateway_plugin->createPaymentMethod($payment_method, $values['payment_details']);
     }
     catch (DeclineException $e) {
-      $this->logger->warning($e->getMessage());
+      \Drupal::logger('commerce_payment')->warning($e->getMessage());
       throw new DeclineException(t('We encountered an error processing your payment method. Please verify your details and try again.'));
     }
     catch (PaymentGatewayException $e) {
-      $this->logger->error($e->getMessage());
+      \Drupal::logger('commerce_payment')->error($e->getMessage());
       throw new PaymentGatewayException(t('We encountered an unexpected error processing your payment method. Please try again later.'));
     }
   }

@@ -34,6 +34,44 @@ interface OrderTypeInterface extends CommerceBundleEntityInterface {
   public function setWorkflowId($workflow_id);
 
   /**
+   * Whether we should use a single profile for both shipping and billing.
+   *
+   * @return bool
+   *   TRUE if we should only use a single profile for this order type.
+   */
+  public function useSingleProfile();
+
+  /**
+   * Sets whether we should use a single profile for both shipping and billing.
+   *
+   * @param bool $use_single_profile
+   *   Boolean indicating if we should use a single profile.
+   *
+   * @return $this
+   */
+  public function setUseSingleProfile($use_single_profile);
+
+  /**
+   * Gets the order type's billing profile ID.
+   *
+   * Dependent on the useSingleProfile field on the order_type.
+   *
+   * @return string
+   *   The order type's billing profile ID name.
+   */
+  public function getBillingProfileId();
+
+  /**
+   * Gets the order type's shipping profile ID.
+   *
+   * Dependent on the useSingleProfile field on the order_type.
+   *
+   * @return string
+   *   The order type's shipping profile ID name.
+   */
+  public function getShippingProfileId();
+
+  /**
    * Gets the order type's refresh mode.
    *
    * Used by the order refresh process.

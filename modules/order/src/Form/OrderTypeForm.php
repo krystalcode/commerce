@@ -4,10 +4,15 @@ namespace Drupal\commerce_order\Form;
 
 use Drupal\commerce\EntityTraitManagerInterface;
 use Drupal\commerce_order\Entity\OrderType;
+use Drupal\commerce_order\Entity\OrderTypeInterface;
 use Drupal\commerce\Form\CommerceBundleEntityFormBase;
+
+use Drupal\Core\Config\FileStorage;
+use Drupal\Core\Config\StorageInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\state_machine\WorkflowManagerInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -16,24 +21,37 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class OrderTypeForm extends CommerceBundleEntityFormBase {
 
   /**
-   * The workflow manager.
+   * The entity type manager.
    *
-   * @var \Drupal\state_machine\WorkflowManagerInterface
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
-  protected $workflowManager;
+  protected $entityTypeManager;
 
   /**
-   * Constructs a new OrderTypeForm object.
+   * The config storage.
+   *
+   * @var \Drupal\Core\Config\StorageInterface
+   */
+  protected $configStorage;
+
+  /**
+   * Constructs a new CommerceBundleEntityFormBase object.
    *
    * @param \Drupal\commerce\EntityTraitManagerInterface $trait_manager
    *   The entity trait manager.
-   * @param \Drupal\state_machine\WorkflowManagerInterface $workflow_manager
-   *   The workflow manager.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager.
+   * @param \Drupal\Core\Config\StorageInterface $config_storage
+   *   The config storage.
    */
-  public function __construct(EntityTraitManagerInterface $trait_manager, WorkflowManagerInterface $workflow_manager) {
+  public function __construct(
+    EntityTraitManagerInterface $trait_manager,
+    EntityTypeManagerInterface $entity_type_manager,
+    StorageInterface $config_storage
+  ) {
     parent::__construct($trait_manager);
-
-    $this->workflowManager = $workflow_manager;
+    $this->entityTypeManager = $entity_type_manager;
+    $this->configStorage = $config_storage;
   }
 
   /**
@@ -42,7 +60,8 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('plugin.manager.commerce_entity_trait'),
-      $container->get('plugin.manager.workflow')
+      $container->get('entity_type.manager'),
+      $container->get('config.storage')
     );
   }
 
@@ -53,7 +72,8 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
     $form = parent::form($form, $form_state);
     /** @var \Drupal\commerce_order\Entity\OrderTypeInterface $order_type */
     $order_type = $this->entity;
-    $workflows = $this->workflowManager->getGroupedLabels('commerce_order');
+    $workflow_manager = \Drupal::service('plugin.manager.workflow');
+    $workflows = $workflow_manager->getGroupedLabels('commerce_order');
 
     $form['#tree'] = TRUE;
     $form['label'] = [
@@ -71,7 +91,6 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
         'source' => ['label'],
       ],
       '#maxlength' => EntityTypeInterface::BUNDLE_MAX_LENGTH,
-      '#disabled' => !$order_type->isNew(),
     ];
     $form['workflow'] = [
       '#type' => 'select',
@@ -81,6 +100,12 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
       '#description' => $this->t('Used by all orders of this type.'),
     ];
     $form = $this->buildTraitForm($form, $form_state);
+
+    $form['useSingleProfile'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Use a single profile for both billing and shipping'),
+      '#default_value' => $order_type->useSingleProfile(),
+    ];
 
     $form['refresh'] = [
       '#type' => 'details',
@@ -140,15 +165,17 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
       ],
     ];
 
-    return $form;
+    return $this->protectBundleIdElement($form);
   }
 
   /**
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
+    /** @var \Drupal\state_machine\WorkflowManager $workflow_manager */
+    $workflow_manager = \Drupal::service('plugin.manager.workflow');
     /** @var \Drupal\state_machine\Plugin\Workflow\WorkflowInterface $workflow */
-    $workflow = $this->workflowManager->createInstance($form_state->getValue('workflow'));
+    $workflow = $workflow_manager->createInstance($form_state->getValue('workflow'));
     // Verify "Place" transition.
     if (!$workflow->getTransition('place')) {
       $form_state->setError($form['workflow'], $this->t('The @workflow workflow does not have a "Place" transition.', [
@@ -171,11 +198,63 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
     $status = $this->entity->save();
     $this->submitTraitForm($form, $form_state);
 
+    // If the user has selected to use a single profile, let's create the two
+    // new profiles, if not already created.
+    /** @var \Drupal\commerce_order\Entity\OrderTypeInterface $order_type */
+    $order_type = $this->entity;
+    if (!$order_type->useSingleProfile()) {
+      $this->createBillingShippingProfiles($order_type);
+    }
+
     $this->messenger()->addMessage($this->t('Saved the %label order type.', ['%label' => $this->entity->label()]));
     $form_state->setRedirect('entity.commerce_order_type.collection');
 
     if ($status == SAVED_NEW) {
       commerce_order_add_order_items_field($this->entity);
+    }
+  }
+
+  /**
+   * Create the billing and shipping profiles, if not already created.
+   *
+   * @param \Drupal\commerce_order\Entity\OrderTypeInterface $order_type
+   *   The order type entity.
+   */
+  protected function createBillingShippingProfiles(OrderTypeInterface $order_type) {
+    $profile_type_storage = $this->entityTypeManager->getStorage('profile_type');
+    /** @var \Drupal\profile\Entity\ProfileTypeInterface $billing_profile_type */
+    $billing_profile_type = $profile_type_storage->load('customer_billing');
+
+    // Import YAML config.
+    $config_path = drupal_get_path('module', 'commerce_order') . '/config/shipping_billing_profiles';
+    $source = new FileStorage($config_path);
+    $config_storage = $this->configStorage;
+
+    if (!$billing_profile_type) {
+      $billing_configs = [
+        'core.entity_form_display.profile.customer_billing.default',
+        'core.entity_view_display.profile.customer_billing.default',
+        'field.field.profile.customer_billing.address',
+        'profile.type.customer_billing',
+      ];
+      foreach ($billing_configs as $config_name) {
+        $config_storage->write($config_name, $source->read($config_name));
+      }
+    }
+
+    /** @var \Drupal\profile\Entity\ProfileTypeInterface $shipping_profile_type */
+    $shipping_profile_type = $profile_type_storage->load('customer_shipping');
+
+    if (!$shipping_profile_type) {
+      $shipping_configs = [
+        'core.entity_form_display.profile.customer_shipping.default',
+        'core.entity_view_display.profile.customer_shipping.default',
+        'field.field.profile.customer_shipping.address',
+        'profile.type.customer_shipping',
+      ];
+      foreach ($shipping_configs as $config_name) {
+        $config_storage->write($config_name, $source->read($config_name));
+      }
     }
   }
 
