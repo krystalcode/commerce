@@ -18,10 +18,18 @@ class PaymentMethodAddForm extends PaymentGatewayFormBase {
   protected $routeMatch;
 
   /**
+   * The entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
    * Constructs a new PaymentMethodAddForm.
    */
   public function __construct() {
     $this->routeMatch = \Drupal::service('current_route_match');
+    $this->entityTypeManager = \Drupal::service('entity_type.manager');
   }
 
   /**
@@ -57,14 +65,24 @@ class PaymentMethodAddForm extends PaymentGatewayFormBase {
     /** @var \Drupal\profile\Entity\ProfileInterface $billing_profile */
     $billing_profile = $payment_method->getBillingProfile();
     if (!$billing_profile) {
+      $billing_profile_id = 'customer';
+      $order = $this->routeMatch->getParameter('commerce_order');
+
+      if ($order) {
+        $order_type_storage = $this->entityTypeManager->getStorage('commerce_order_type');
+        /** @var \Drupal\commerce_order\Entity\OrderTypeInterface $order_type */
+        $order_type = $order_type_storage->load($order->bundle());
+        $billing_profile_id = $order_type->getBillingProfileId();
+      }
+
       /** @var \Drupal\profile\Entity\ProfileInterface $billing_profile */
       $billing_profile = Profile::create([
-        'type' => 'customer',
+        'type' => $billing_profile_id,
         'uid' => $payment_method->getOwnerId(),
       ]);
     }
 
-    if ($order = $this->routeMatch->getParameter('commerce_order')) {
+    if ($order) {
       $store = $order->getStore();
     }
     else {

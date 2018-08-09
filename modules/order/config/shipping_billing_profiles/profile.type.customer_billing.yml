@@ -1,0 +1,16 @@
+uuid: 805f18db-2ded-4bbf-be1e-011e769e5638
+langcode: en
+status: true
+dependencies: {  }
+id: customer_billing
+label: 'Customer Billing'
+registration: false
+multiple: true
+roles:
+  authenticated: '0'
+  administrator: '0'
+weight: 0
+use_revisions: true
+description: ''
+publish_label: 'Publish Profile'
+unpublish_label: 'Unpublish Profile'

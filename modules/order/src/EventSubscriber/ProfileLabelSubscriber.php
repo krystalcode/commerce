@@ -26,8 +26,14 @@ class ProfileLabelSubscriber implements EventSubscriberInterface {
   public function onLabel(ProfileLabelEvent $event) {
     /** @var \Drupal\profile\Entity\ProfileInterface $order */
     $profile = $event->getProfile();
-    if ($profile->bundle() == 'customer' && !$profile->address->isEmpty()) {
-      $event->setLabel($profile->address->address_line1);
+    if (
+      $profile->bundle() == 'customer'
+      || $profile->bundle() == 'customer_billing'
+      || $profile->bundle() == 'customer_shipping'
+    ) {
+      if (!$profile->address->isEmpty()) {
+        $event->setLabel($profile->address->address_line1);
+      }
     }
   }
 

@@ -1,0 +1,22 @@
+uuid: 0368269d-9614-4e1a-a189-36f145b25873
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.profile.customer_shipping.address
+    - profile.type.customer_shipping
+  module:
+    - address
+id: profile.customer_shipping.default
+targetEntityType: profile
+bundle: customer_shipping
+mode: default
+content:
+  address:
+    weight: 0
+    settings:
+      default_country: null
+    third_party_settings: {  }
+    type: address_default
+    region: content
+hidden: {  }

@@ -41,6 +41,7 @@ use Drupal\commerce\Entity\CommerceBundleEntityBase;
  *     "label",
  *     "id",
  *     "workflow",
+ *     "useSingleProfile",
  *     "refresh_mode",
  *     "refresh_frequency",
  *     "sendReceipt",
@@ -64,6 +65,13 @@ class OrderType extends CommerceBundleEntityBase implements OrderTypeInterface {
    * @var string
    */
   protected $workflow;
+
+  /**
+   * Boolean indicating whether to use single profile for this order type.
+   *
+   * @var bool
+   */
+  protected $useSingleProfile;
 
   /**
    * The order type refresh mode.
@@ -105,6 +113,21 @@ class OrderType extends CommerceBundleEntityBase implements OrderTypeInterface {
    */
   public function setWorkflowId($workflow_id) {
     $this->workflow = $workflow_id;
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function useSingleProfile() {
+    return $this->useSingleProfile;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUseSingleProfile($use_single_profile) {
+    $this->useSingleProfile = $use_single_profile;
     return $this;
   }
 
@@ -167,6 +190,28 @@ class OrderType extends CommerceBundleEntityBase implements OrderTypeInterface {
   public function setReceiptBcc($receipt_bcc) {
     $this->receiptBcc = $receipt_bcc;
     return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getBillingProfileId() {
+    if (!$this->useSingleProfile()) {
+      return 'customer_billing';
+    }
+
+    return 'customer';
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getShippingProfileId() {
+    if (!$this->useSingleProfile()) {
+      return 'customer_shipping';
+    }
+
+    return 'customer';
   }
 
 }

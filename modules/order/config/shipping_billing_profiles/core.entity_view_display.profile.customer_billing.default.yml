@@ -1,0 +1,22 @@
+uuid: 15880034-fd97-460f-a474-298514fcbe1e
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.profile.customer_billing.address
+    - profile.type.customer_billing
+  module:
+    - address
+id: profile.customer_billing.default
+targetEntityType: profile
+bundle: customer_billing
+mode: default
+content:
+  address:
+    weight: 0
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    type: address_default
+    region: content
+hidden: {  }

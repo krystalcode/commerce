@@ -34,10 +34,13 @@ class BillingInformation extends CheckoutPaneBase implements CheckoutPaneInterfa
   public function buildPaneForm(array $pane_form, FormStateInterface $form_state, array &$complete_form) {
     $store = $this->order->getStore();
     $billing_profile = $this->order->getBillingProfile();
+    $order_type_storage = $this->entityTypeManager->getStorage('commerce_order_type');
+    /** @var \Drupal\commerce_order\Entity\OrderTypeInterface $order_type */
+    $order_type = $order_type_storage->load($this->order->bundle());
     if (!$billing_profile) {
       $profile_storage = $this->entityTypeManager->getStorage('profile');
       $billing_profile = $profile_storage->create([
-        'type' => 'customer',
+        'type' => $order_type->getBillingProfileId(),
         'uid' => $this->order->getCustomerId(),
       ]);
     }

@@ -1,0 +1,16 @@
+uuid: d06ad014-bc4f-4fa5-b71e-30278ba1e3f2
+langcode: en
+status: true
+dependencies: {  }
+id: customer_shipping
+label: 'Customer Shipping'
+registration: false
+multiple: true
+roles:
+  authenticated: '0'
+  administrator: '0'
+weight: 0
+use_revisions: true
+description: ''
+publish_label: 'Publish Profile'
+unpublish_label: 'Unpublish Profile'

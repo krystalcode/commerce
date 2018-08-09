@@ -1,0 +1,25 @@
+uuid: d9697e97-1d92-4c9b-9871-a6429846cae2
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.profile.address
+    - profile.type.customer_billing
+  module:
+    - address
+id: profile.customer_billing.address
+field_name: address
+entity_type: profile
+bundle: customer_billing
+label: Address
+description: ''
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  available_countries: {  }
+  langcode_override: ''
+  field_overrides: {  }
+  fields: {  }
+field_type: address
