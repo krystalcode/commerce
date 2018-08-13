@@ -53,6 +53,7 @@ use Drupal\commerce\Entity\CommerceBundleEntityBase;
  *     "add-form" = "/admin/commerce/config/order-types/add",
  *     "edit-form" = "/admin/commerce/config/order-types/{commerce_order_type}/edit",
  *     "delete-form" = "/admin/commerce/config/order-types/{commerce_order_type}/delete",
+ *     "use-multi-profile-form" = "/admin/commerce/config/order-types/{commerce_order_type}/use-multi-profile",
  *     "collection" = "/admin/commerce/config/order-types"
  *   }
  * )
