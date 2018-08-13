@@ -2,18 +2,15 @@
 
 namespace Drupal\commerce_order\Form;
 
-use Drupal\commerce\EntityTraitManagerInterface;
 use Drupal\commerce_order\Entity\OrderType;
-use Drupal\commerce_order\Entity\OrderTypeInterface;
+use Drupal\commerce\EntityTraitManagerInterface;
 use Drupal\commerce\Form\CommerceBundleEntityFormBase;
 
-use Drupal\Core\Config\FileStorage;
-use Drupal\Core\Config\StorageInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Provides an order type form.
@@ -21,37 +18,24 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class OrderTypeForm extends CommerceBundleEntityFormBase {
 
   /**
-   * The entity type manager.
+   * The current request.
    *
-   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   * @var \Symfony\Component\HttpFoundation\Request
    */
-  protected $entityTypeManager;
-
-  /**
-   * The config storage.
-   *
-   * @var \Drupal\Core\Config\StorageInterface
-   */
-  protected $configStorage;
+  protected $request;
 
   /**
    * Constructs a new CommerceBundleEntityFormBase object.
    *
    * @param \Drupal\commerce\EntityTraitManagerInterface $trait_manager
    *   The entity trait manager.
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
-   *   The entity type manager.
-   * @param \Drupal\Core\Config\StorageInterface $config_storage
-   *   The config storage.
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The current request.
    */
-  public function __construct(
-    EntityTraitManagerInterface $trait_manager,
-    EntityTypeManagerInterface $entity_type_manager,
-    StorageInterface $config_storage
-  ) {
+  public function __construct(EntityTraitManagerInterface $trait_manager, Request $request) {
     parent::__construct($trait_manager);
-    $this->entityTypeManager = $entity_type_manager;
-    $this->configStorage = $config_storage;
+
+    $this->request = $request;
   }
 
   /**
@@ -60,8 +44,7 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('plugin.manager.commerce_entity_trait'),
-      $container->get('entity_type.manager'),
-      $container->get('config.storage')
+      $container->get('request_stack')->getCurrentRequest()
     );
   }
 
@@ -105,6 +88,10 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
       '#type' => 'checkbox',
       '#title' => $this->t('Use a single profile for both billing and shipping'),
       '#default_value' => $order_type->useSingleProfile(),
+      '#description' => !$order_type->useSingleProfile()
+      ? $this->t('Switching back to use the single profile is not possible.')
+      : '',
+      '#disabled' => !$order_type->useSingleProfile(),
     ];
 
     $form['refresh'] = [
@@ -195,66 +182,42 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
-    $status = $this->entity->save();
-    $this->submitTraitForm($form, $form_state);
-
-    // If the user has selected to use a single profile, let's create the two
-    // new profiles, if not already created.
     /** @var \Drupal\commerce_order\Entity\OrderTypeInterface $order_type */
     $order_type = $this->entity;
-    if (!$order_type->useSingleProfile()) {
-      $this->createBillingShippingProfiles($order_type);
-    }
 
-    $this->messenger()->addMessage($this->t('Saved the %label order type.', ['%label' => $this->entity->label()]));
-    $form_state->setRedirect('entity.commerce_order_type.collection');
+    // Get the initial value of the useSingleProfile field.
+    $previous_use_single_profile_value = $form['useSingleProfile']['#default_value'];
+    $new_use_single_profile_value = $form_state->getValue('useSingleProfile');
+
+    $status = $order_type->save();
+    $this->submitTraitForm($form, $form_state);
 
     if ($status == SAVED_NEW) {
-      commerce_order_add_order_items_field($this->entity);
-    }
-  }
-
-  /**
-   * Create the billing and shipping profiles, if not already created.
-   *
-   * @param \Drupal\commerce_order\Entity\OrderTypeInterface $order_type
-   *   The order type entity.
-   */
-  protected function createBillingShippingProfiles(OrderTypeInterface $order_type) {
-    $profile_type_storage = $this->entityTypeManager->getStorage('profile_type');
-    /** @var \Drupal\profile\Entity\ProfileTypeInterface $billing_profile_type */
-    $billing_profile_type = $profile_type_storage->load('customer_billing');
-
-    // Import YAML config.
-    $config_path = drupal_get_path('module', 'commerce_order') . '/config/shipping_billing_profiles';
-    $source = new FileStorage($config_path);
-    $config_storage = $this->configStorage;
-
-    if (!$billing_profile_type) {
-      $billing_configs = [
-        'core.entity_form_display.profile.customer_billing.default',
-        'core.entity_view_display.profile.customer_billing.default',
-        'field.field.profile.customer_billing.address',
-        'profile.type.customer_billing',
-      ];
-      foreach ($billing_configs as $config_name) {
-        $config_storage->write($config_name, $source->read($config_name));
-      }
+      commerce_order_add_order_items_field($order_type);
     }
 
-    /** @var \Drupal\profile\Entity\ProfileTypeInterface $shipping_profile_type */
-    $shipping_profile_type = $profile_type_storage->load('customer_shipping');
+    $this->messenger()->addMessage($this->t('Saved the %label order type.', ['%label' => $order_type->label()]));
 
-    if (!$shipping_profile_type) {
-      $shipping_configs = [
-        'core.entity_form_display.profile.customer_shipping.default',
-        'core.entity_view_display.profile.customer_shipping.default',
-        'field.field.profile.customer_shipping.address',
-        'profile.type.customer_shipping',
-      ];
-      foreach ($shipping_configs as $config_name) {
-        $config_storage->write($config_name, $source->read($config_name));
-      }
+    // If the user has now selected to use a single profile, let's redirect them
+    // to the confirm page because this is a significant change.
+    if ($new_use_single_profile_value == FALSE
+      && $previous_use_single_profile_value != $new_use_single_profile_value) {
+      // Let's just set the useSingleProfile field to TRUE for now, in case, the
+      // user cancels out of switching to multi profiles. We'll turn it to
+      // FALSE, once the user has confirmed and we've processed everything in
+      // the confirm submit.
+      $order_type->setUseSingleProfile(TRUE);
+      $order_type->save();
+
+      // Remove the destination as we want to go to the confirm page.
+      $this->request->query->remove('destination');
+
+      $form_state->setRedirect(('entity.commerce_order_type.use_multi_profile_form'), [
+        'commerce_order_type' => $order_type->id(),
+      ]);
+    }
+    else {
+      $form_state->setRedirect('entity.commerce_order_type.collection');
     }
   }
 
