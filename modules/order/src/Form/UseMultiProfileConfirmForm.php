@@ -253,14 +253,6 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
    * Migrate the existing order profiles to use split shipping/billing profiles.
    *
    * We'll be using a batch_process to do this as we might have lots of orders.
-   *
-   * Profiles that can be clearly associated only with shipping information or
-   * only with billing information are migrated accordingly, keeping their IDs.
-   *
-   * Profiles that are associated with both shipping and billing information are
-   * handled differently. The original is migrated to be a billing profile. Then
-   * a copy is created that is migrated to be a shipping profile and the order
-   * shipments that use it are updated to use the new one.
    */
   protected function migrateExistingProfiles() {
     $order_ids = $this->getExistingOrders();
