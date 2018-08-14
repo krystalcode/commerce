@@ -99,9 +99,10 @@ class MigrateExistingOrderProfiles {
   public static function batchFinished($success, $results, $operations) {
     if ($success) {
       $message = \Drupal::translation()->translate(
-        'The following orders were successfully migrated: @order_ids.', [
-          '@order_ids' => implode(', ', $results),
-        ]
+        'The following orders were successfully migrated to
+          use split profiles for billing and shipping: @order_ids.', [
+            '@order_ids' => implode(', ', $results),
+          ]
       );
     }
     else {
