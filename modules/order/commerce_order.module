@@ -218,8 +218,12 @@ function commerce_order_field_storage_config_access(FieldStorageConfigInterface 
  * Hides the "Storage settings" operation for the profile 'address' field.
  */
 function commerce_order_entity_operation_alter(array &$operations, EntityInterface $entity) {
-  if ($entity->getEntityTypeId() == 'field_config' && $entity->id() == 'profile.customer.address') {
-    unset($operations['storage-settings']);
+  if ($entity->getEntityTypeId() == 'field_config') {
+    if ($entity->id() == 'profile.customer.address'
+    || $entity->id() == 'profile.customer_billing.address'
+    || $entity->id() == 'profile.customer_shipping.address') {
+      unset($operations['storage-settings']);
+    }
   }
 }
 
@@ -232,7 +236,9 @@ function commerce_order_entity_operation_alter(array &$operations, EntityInterfa
 function commerce_order_form_field_config_edit_form_alter(array &$form, FormStateInterface $form_state) {
   /** @var \Drupal\Core\Field\FieldConfigInterface $entity */
   $entity = $form_state->getFormObject()->getEntity();
-  if ($entity->id() == 'profile.customer.address') {
+  if ($entity->id() == 'profile.customer.address'
+    || $entity->id() == 'profile.customer_billing.address'
+    || $entity->id() == 'profile.customer_shipping.address') {
     $form['settings']['available_countries']['#access'] = FALSE;
   }
 }
