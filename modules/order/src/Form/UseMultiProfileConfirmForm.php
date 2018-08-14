@@ -2,9 +2,6 @@
 
 namespace Drupal\commerce_order\Form;
 
-use Drupal\commerce_order\Entity\OrderTypeInterface;
-
-use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Config\FileStorage;
 use Drupal\Core\Config\StorageInterface;
 use Drupal\Core\Entity\EntityFieldManager;
@@ -92,9 +89,10 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
     // Check if there are existing orders on this order type.
     $description = $this->getExistingOrderCountDescription();
 
-    $description .= '<strong>' . $this->t('This action cannot be undone.
-      You cannot switch back to using the single profile again.'
-      ) . '</strong>';
+    $description .= '<strong>'
+      . $this->t('This action cannot be undone. You cannot switch back to
+       using the single profile again.')
+      . '</strong>';
 
     return $description;
   }
@@ -226,6 +224,7 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
       $existing_field_definitions = $this->entityFieldManager->getFieldDefinitions('profile', $bundle);
 
       foreach ($field_definitions as $field_name => $field_definition) {
+        /** @var \Drupal\Core\Field\FieldDefinitionInterface $field_definition */
         // Don't copy the base fields and the address field.
         if ($field_definition->getFieldStorageDefinition()->isBaseField() == TRUE) {
           continue;
