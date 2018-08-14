@@ -31,13 +31,61 @@ class MigrateExistingOrderProfiles {
    * @param array $context
    *   The batch context array.
    */
-  public static function migrateProfiles(array $order_ids, OrderTypeInterface $order_type, array &$context) {
+  public static function migrateProfiles(
+    array $order_ids,
+    OrderTypeInterface $order_type,
+    array &$context
+  ) {
     $message = 'Migrating existing order profiles to use split profiles for
       billing and shipping...';
 
     $results = [];
     foreach ($order_ids as $order_id) {
-      $order = \Drupal::entityTypeManager()->getStorage('commerce_order')->load($order_id);
+      /** @var \Drupal\commerce_order\Entity\OrderInterface $order */
+      $order = \Drupal::entityTypeManager()
+        ->getStorage('commerce_order')
+        ->load($order_id);
+
+      // Grab the billing profile.
+      /** @var \Drupal\profile\Entity\ProfileInterface $billing_profile */
+      $billing_profile = $order->getBillingProfile();
+      if ($billing_profile) {
+        // Change the billing profile from the customer profile type to the
+        // customer_billing profile type.
+        $billing_profile->set('type', 'customer_billing');
+        $billing_profile->save();
+      }
+
+      // Grab the shipping profiles.
+      if ($order->shipments) {
+        foreach ($order->shipments->referencedEntities() as $shipment) {
+          /** @var \Drupal\profile\Entity\ProfileInterface $shipping_profile */
+          $shipping_profile = $shipment->getShippingProfile();
+
+          // We have distinct billing and shipping profile references.
+          if ($shipping_profile->id() != $billing_profile->id()) {
+            // Change the shipping profile from the customer profile type to the
+            // customer_shipping profile type.
+            $shipping_profile->set('type', 'customer_shipping');
+            $shipping_profile->save();
+          }
+          // Else, if the shipment references the same billing profile, create
+          // and save a new duplicate and reference this new shipping profile.
+          else {
+            /** @var \Drupal\profile\Entity\ProfileInterface $new_shipping_profile */
+            $new_shipping_profile = $shipping_profile->createDuplicate();
+
+            // Change the shipping profile from the customer profile type to the
+            // customer_shipping profile type.
+            $new_shipping_profile->set('type', 'customer_shipping');
+            $new_shipping_profile->save();
+
+            /** @var \Drupal\commerce_shipping\Entity\ShipmentInterface $shipment */
+            $shipment->setShippingProfile($new_shipping_profile);
+          }
+        }
+      }
+
       $results[] = $order->id();
     }
 
@@ -50,19 +98,21 @@ class MigrateExistingOrderProfiles {
    */
   public static function batchFinished($success, $results, $operations) {
     if ($success) {
-      $message = \Drupal::translation()->formatPlural(
-        count($results),
-        'One order profile has been successfully migrated.',
-        '@count order profiles have been successfully migrated.'
+      $message = \Drupal::translation()->translate(
+        'The following orders were successfully migrated: @order_ids.', [
+          '@order_ids' => implode(', ', $results),
+        ]
       );
     }
     else {
       $error_operation = reset($operations);
-      $message = t(
-        'An error occurred while processing @operation with arguments : @args',
+      $message = \Drupal::translation()->translate(
+        'An error occurred while processing @operation with arguments: 
+          @args for the following order IDs: @order_ids.',
         [
           '@operation' => $error_operation[0],
           '@args' => print_r($error_operation[0], TRUE),
+          '@order_ids' => implode(', ', $results),
         ]
       );
     }
