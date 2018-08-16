@@ -132,6 +132,33 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
   /**
    * {@inheritdoc}
    */
+  public function buildForm(array $form, FormStateInterface $form_state) {
+    // Check if we have incompatible module versions as modules like Commerce
+    // Shipping and Commerce POS will be affected when we switch to split
+    // profiles.
+    $incompatible_modules = $this->getIncompatibleModules();
+
+    // If we have modules that are running incompatible versions, output a
+    // warning message to the user.
+    if ($incompatible_modules) {
+      $this->messenger()->addWarning($this->t('The following modules are
+        running incompatible versions for the switch to split profiles and it
+        could possibly render the site as unusable.
+        <p><strong>@modules</strong></p>
+        <p>Please upgrade and try again.</p>', [
+          '@modules' => implode('<br>', $incompatible_modules)
+        ]
+      ));
+
+      return;
+    }
+
+    return parent::buildForm($form, $form_state);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     /** @var \Drupal\commerce_order\Entity\OrderTypeInterface $order_type */
     $order_type = $this->entity;
@@ -198,7 +225,7 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
 
     if (!$billing_profile_type || !$shipping_profile_type) {
       $this->messenger()->addMessage($this->t('Billing and shipping profile
-      types have been successfully created.'
+        types have been successfully created.'
       ));
     }
   }
@@ -317,6 +344,46 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
     }
 
     return $description;
+  }
+
+  /**
+   * Get all modules that will be affected and incompatible with the switch.
+   *
+   * @return array
+   *   An array of module names and the expected versions.
+   */
+  protected function getIncompatibleModules() {
+    $incompatible_modules = [];
+
+    $affected_modules = [
+      'commerce_pos' => '2.2',
+      'commerce_shipping' => '2.2',
+      'commerce_amws' => '2.2',
+    ];
+
+    foreach ($affected_modules as $module => $expected_version) {
+      $module_info = system_get_info('module', $module);
+      if (empty($module_info)) {
+        continue;
+      }
+
+      if (empty($module_info['version'])) {
+        continue;
+      }
+
+      $current_version = substr($module_info['version'], 4);
+
+      if (version_compare($current_version, $expected_version, '<')) {
+        $incompatible_modules[] = $this->t(
+          '@module_name at least version 8.x-@version or higher', [
+            '@module_name' => $module,
+            '@version' => $expected_version,
+          ]
+        );
+      }
+    }
+
+    return $incompatible_modules;
   }
 
 }
