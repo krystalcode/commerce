@@ -371,6 +371,7 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
         continue;
       }
 
+      // TODO: Find a reliable way to extract the module version.
       $current_version = substr($module_info['version'], 4);
 
       if (version_compare($current_version, $expected_version, '<')) {
