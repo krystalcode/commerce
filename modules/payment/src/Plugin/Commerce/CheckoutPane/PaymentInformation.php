@@ -267,7 +267,7 @@ class PaymentInformation extends CheckoutPaneBase {
       $order_type = $order_type_storage->load($this->order->bundle());
       $billing_profile = $this->entityTypeManager->getStorage('profile')->create([
         'uid' => $this->order->getCustomerId(),
-        'type' => $order_type->getBillingProfileId(),
+        'type' => $order_type->getBillingProfileTypeId(),
       ]);
     }
 

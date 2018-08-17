@@ -3,7 +3,7 @@ status: true
 label: Default
 id: default
 workflow: order_default
-useSingleProfile: true
+useMultipleProfileTypes: false
 refresh_mode: customer
 refresh_frequency: 300
 sendReceipt: true

@@ -13,6 +13,11 @@ interface OrderTypeInterface extends CommerceBundleEntityInterface {
   const REFRESH_ALWAYS = 'always';
   const REFRESH_CUSTOMER = 'customer';
 
+  // Commerce order profile types.
+  const PROFILE_COMMON = 'customer';
+  const PROFILE_BILLING = 'customer_billing';
+  const PROFILE_SHIPPING = 'customer_shipping';
+
   /**
    * Gets the order type's workflow ID.
    *
@@ -34,42 +39,42 @@ interface OrderTypeInterface extends CommerceBundleEntityInterface {
   public function setWorkflowId($workflow_id);
 
   /**
-   * Whether we should use a single profile for both shipping and billing.
+   * Whether we should use a multiple profile types for shipping and billing.
    *
    * @return bool
-   *   TRUE if we should only use a single profile for this order type.
+   *   TRUE if we should use multiple profile types for this order type.
    */
-  public function useSingleProfile();
+  public function useMultipleProfileTypes();
 
   /**
-   * Sets whether we should use a single profile for both shipping and billing.
+   * Sets whether we should use multiple profile types for shipping and billing.
    *
-   * @param bool $use_single_profile
-   *   Boolean indicating if we should use a single profile.
+   * @param bool $use_multiple_profile_types
+   *   Boolean indicating if we should use multiple profile types.
    *
    * @return $this
    */
-  public function setUseSingleProfile($use_single_profile);
+  public function setuseMultipleProfileTypes($use_multiple_profile_types);
 
   /**
    * Gets the order type's billing profile ID.
    *
-   * Dependent on the useSingleProfile field on the order_type.
+   * Dependent on the useMultipleProfileTypes field on the order_type.
    *
    * @return string
-   *   The order type's billing profile ID name.
+   *   The order type's billing profile type ID.
    */
-  public function getBillingProfileId();
+  public function getBillingProfileTypeId();
 
   /**
    * Gets the order type's shipping profile ID.
    *
-   * Dependent on the useSingleProfile field on the order_type.
+   * Dependent on the useMultipleProfileTypes field on the order_type.
    *
    * @return string
-   *   The order type's shipping profile ID name.
+   *   The order type's shipping profile type ID.
    */
-  public function getShippingProfileId();
+  public function getShippingProfileTypeId();
 
   /**
    * Gets the order type's refresh mode.

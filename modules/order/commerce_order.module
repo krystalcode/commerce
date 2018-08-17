@@ -6,7 +6,9 @@
  */
 
 use Drupal\commerce_order\Entity\OrderTypeInterface;
+use Drupal\commerce_order\Entity\OrderType;
 use Drupal\commerce_order\Plugin\Field\FieldFormatter\PriceCalculatedFormatter;
+
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -218,13 +220,15 @@ function commerce_order_field_storage_config_access(FieldStorageConfigInterface 
  * Hides the "Storage settings" operation for the profile 'address' field.
  */
 function commerce_order_entity_operation_alter(array &$operations, EntityInterface $entity) {
-  if ($entity->getEntityTypeId() == 'field_config') {
-    if ($entity->id() == 'profile.customer.address'
-    || $entity->id() == 'profile.customer_billing.address'
-    || $entity->id() == 'profile.customer_shipping.address') {
-      unset($operations['storage-settings']);
-    }
+  if ($entity->getEntityTypeId() !== 'field_config') {
+    return;
   }
+
+  if (!commerce_order_entity_is_supported_profile_address($entity)) {
+    return;
+  }
+
+  unset($operations['storage-settings']);
 }
 
 /**
@@ -236,24 +240,53 @@ function commerce_order_entity_operation_alter(array &$operations, EntityInterfa
 function commerce_order_form_field_config_edit_form_alter(array &$form, FormStateInterface $form_state) {
   /** @var \Drupal\Core\Field\FieldConfigInterface $entity */
   $entity = $form_state->getFormObject()->getEntity();
-  if ($entity->id() == 'profile.customer.address'
-    || $entity->id() == 'profile.customer_billing.address'
-    || $entity->id() == 'profile.customer_shipping.address') {
-    $form['settings']['available_countries']['#access'] = FALSE;
+  if (!commerce_order_entity_is_supported_profile_address($entity)) {
+    return;
   }
+
+  $form['settings']['available_countries']['#access'] = FALSE;
 }
 
 /**
  * Implements hook_form_FORM_ID_alter().
  */
 function commerce_order_form_profile_type_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
-  // Hide the use_revisions field for the 'customer' profile as we always want
-  // to use revisions for this profile.
+  // Hide the use_revisions field for the 'customer', 'customer_billing', and
+  // 'customer_shipping' profile types as we always want to use revisions.
   /** @var \Drupal\profile\Entity\ProfileTypeInterface $entity */
   $entity = $form_state->getFormObject()->getEntity();
-  if ($entity->id() != 'customer') {
+  $supported_profile_types = [
+    OrderType::PROFILE_COMMON,
+    OrderType::PROFILE_BILLING,
+    OrderType::PROFILE_SHIPPING,
+  ];
+
+  if (!in_array($entity->id(), $supported_profile_types)) {
     return;
   }
 
   $form['use_revisions']['#access'] = FALSE;
+}
+
+/**
+ * Returns TRUE if the profile address entity is supported by commerce order.
+ *
+ * @param object $entity
+ *   The profile address entity.
+ *
+ * @return bool
+ *   Returns TRUE if the profile address entity is supported.
+ */
+function commerce_order_entity_is_supported_profile_address($entity) {
+  $supported_entity_ids = [
+    'profile.customer.address',
+    'profile.customer_billing.address',
+    'profile.customer_shipping.address',
+  ];
+
+  if (in_array($entity->id(), $supported_entity_ids)) {
+    return TRUE;
+  }
+
+  return FALSE;
 }

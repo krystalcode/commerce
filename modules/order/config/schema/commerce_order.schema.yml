@@ -75,9 +75,9 @@ commerce_order.commerce_order_type.*:
     workflow:
       type: string
       label: 'Workflow'
-    useSingleProfile:
+    useMultipleProfileTypes:
       type: boolean
-      label: 'Use single profile for billing and shipping'
+      label: 'Use multiple profile types for billing and shipping'
     refresh_mode:
       type: string
       label: 'Order refresh mode'

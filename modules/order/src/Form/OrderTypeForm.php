@@ -84,14 +84,15 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
     ];
     $form = $this->buildTraitForm($form, $form_state);
 
-    $form['useSingleProfile'] = [
+    $use_multiple_profile_types = $order_type->useMultipleProfileTypes();
+    $form['useMultipleProfileTypes'] = [
       '#type' => 'checkbox',
-      '#title' => $this->t('Use a single profile for both billing and shipping'),
-      '#default_value' => $order_type->useSingleProfile(),
-      '#description' => !$order_type->useSingleProfile()
+      '#title' => $this->t('Use multiple profile types for billing and shipping'),
+      '#default_value' => $use_multiple_profile_types,
+      '#description' => $use_multiple_profile_types
       ? $this->t('Switching back to use the single profile is not possible.')
       : '',
-      '#disabled' => !$order_type->useSingleProfile(),
+      '#disabled' => $use_multiple_profile_types,
     ];
 
     $form['refresh'] = [
@@ -185,9 +186,30 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
     /** @var \Drupal\commerce_order\Entity\OrderTypeInterface $order_type */
     $order_type = $this->entity;
 
-    // Get the initial value of the useSingleProfile field.
-    $previous_use_single_profile_value = $form['useSingleProfile']['#default_value'];
-    $new_use_single_profile_value = $form_state->getValue('useSingleProfile');
+    // Get the initial value of the useMultipleProfileTypes field.
+    $previous_use_multiple_profiles_value = $form['useMultipleProfileTypes']['#default_value'];
+    $new_use_multiple_profiles_value = $form_state->getValue('useMultipleProfileTypes');
+
+    // If the user has now selected to use multiple profile types, let's
+    // redirect them to the confirm page because this is a significant change.
+    if ($new_use_multiple_profiles_value == TRUE
+      && $previous_use_multiple_profiles_value != $new_use_multiple_profiles_value) {
+      // Let's just set the useMultipleProfileTypes field to FALSE for now, in
+      // case, the user cancels out of switching to multi profiles. We'll turn
+      // it to FALSE, once the user has confirmed and we've processed everything
+      // in the confirm submit.
+      $order_type->setuseMultipleProfileTypes(FALSE);
+
+      // Remove the destination as we want to go to the confirm page.
+      $this->request->query->remove('destination');
+
+      $form_state->setRedirect(('entity.commerce_order_type.multiple_profile_types_form'), [
+        'commerce_order_type' => $order_type->id(),
+      ]);
+    }
+    else {
+      $form_state->setRedirect('entity.commerce_order_type.collection');
+    }
 
     $status = $order_type->save();
     $this->submitTraitForm($form, $form_state);
@@ -196,29 +218,11 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
       commerce_order_add_order_items_field($order_type);
     }
 
-    $this->messenger()->addMessage($this->t('Saved the %label order type.', ['%label' => $order_type->label()]));
-
-    // If the user has now selected to use a single profile, let's redirect them
-    // to the confirm page because this is a significant change.
-    if ($new_use_single_profile_value == FALSE
-      && $previous_use_single_profile_value != $new_use_single_profile_value) {
-      // Let's just set the useSingleProfile field to TRUE for now, in case, the
-      // user cancels out of switching to multi profiles. We'll turn it to
-      // FALSE, once the user has confirmed and we've processed everything in
-      // the confirm submit.
-      $order_type->setUseSingleProfile(TRUE);
-      $order_type->save();
-
-      // Remove the destination as we want to go to the confirm page.
-      $this->request->query->remove('destination');
-
-      $form_state->setRedirect(('entity.commerce_order_type.use_multi_profile_form'), [
-        'commerce_order_type' => $order_type->id(),
-      ]);
-    }
-    else {
-      $form_state->setRedirect('entity.commerce_order_type.collection');
-    }
+    $this->messenger()->addMessage($this->t(
+      'Saved the %label order type.', [
+        '%label' => $order_type->label()
+      ]
+    ));
   }
 
 }

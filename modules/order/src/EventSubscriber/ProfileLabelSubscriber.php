@@ -2,6 +2,7 @@
 
 namespace Drupal\commerce_order\EventSubscriber;
 
+use Drupal\commerce_order\Entity\OrderType;
 use Drupal\profile\Event\ProfileLabelEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
@@ -26,15 +27,22 @@ class ProfileLabelSubscriber implements EventSubscriberInterface {
   public function onLabel(ProfileLabelEvent $event) {
     /** @var \Drupal\profile\Entity\ProfileInterface $order */
     $profile = $event->getProfile();
-    if (
-      $profile->bundle() == 'customer'
-      || $profile->bundle() == 'customer_billing'
-      || $profile->bundle() == 'customer_shipping'
-    ) {
-      if (!$profile->address->isEmpty()) {
-        $event->setLabel($profile->address->address_line1);
-      }
+
+    $supported_profile_types = [
+      OrderType::PROFILE_COMMON,
+      OrderType::PROFILE_BILLING,
+      OrderType::PROFILE_SHIPPING,
+    ];
+
+    if (!in_array($profile->bundle(), $supported_profile_types)) {
+      return;
     }
+
+    if ($profile->address->isEmpty()) {
+      return;
+    }
+
+    $event->setLabel($profile->address->address_line1);
   }
 
 }
