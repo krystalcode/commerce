@@ -96,14 +96,6 @@ class MultipleProfileTypesConfirmForm extends ConfirmFormBase {
        using a single profile type again.')
       . '</strong>';
 
-    $this->messenger()->addWarning($this->t('
-      If you choose to proceed, profiles for existing orders will be migrated to
-      use separate profile types. That can take some time and it might cause 
-      errors if the users try to view their existing orders during the process;
-      if you are running this on a production site please make sure that you are
-      in maintenance mode.'
-    ));
-
     return $description;
   }
 
@@ -162,6 +154,14 @@ class MultipleProfileTypesConfirmForm extends ConfirmFormBase {
 
       return;
     }
+
+    $this->messenger()->addWarning($this->t('
+      If you choose to proceed, profiles for existing orders will be migrated to
+      use separate profile types. That can take some time and it might cause 
+      errors if the users try to view their existing orders during the process;
+      if you are running this on a production site please make sure that you are
+      in maintenance mode.'
+    ));
 
     return parent::buildForm($form, $form_state);
   }
