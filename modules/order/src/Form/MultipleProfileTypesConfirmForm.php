@@ -2,6 +2,8 @@
 
 namespace Drupal\commerce_order\Form;
 
+use Drupal\commerce_order\Entity\OrderType;
+
 use Drupal\Core\Config\FileStorage;
 use Drupal\Core\Config\StorageInterface;
 use Drupal\Core\Entity\EntityFieldManager;
@@ -13,9 +15,9 @@ use Drupal\Core\Routing\CurrentRouteMatch;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * A form to confirm the use of multiple profiles for shipping and billing.
+ * A form to confirm the use of multiple profile types for shipping and billing.
  */
-class UseMultiProfileConfirmForm extends ConfirmFormBase {
+class MultipleProfileTypesConfirmForm extends ConfirmFormBase {
 
   /**
    * The current order type.
@@ -91,8 +93,16 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
 
     $description .= '<strong>'
       . $this->t('This action cannot be undone. You cannot switch back to
-       using the single profile again.')
+       using a single profile type again.')
       . '</strong>';
+
+    $this->messenger()->addWarning($this->t('
+      If you choose to proceed, profiles for existing orders will be migrated to
+      use separate profile types. That can take some time and it might cause 
+      errors if the users try to view their existing orders during the process;
+      if you are running this on a production site please make sure that you are
+      in maintenance mode.'
+    ));
 
     return $description;
   }
@@ -101,7 +111,7 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function getFormId() : string {
-    return $this->entity->getEntityTypeId() . '_confirm_form';
+    return 'commerce_order_type_use_multiple_profile_types_form';
   }
 
   /**
@@ -109,7 +119,7 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
    */
   public function getQuestion() {
     return $this->t('Are you sure you want to switch to using multiple
-      profiles for shipping and billing for the %label order type?', [
+      profile types for shipping and billing for the %label order type?', [
         '%label' => $this->entity->label(),
       ]
     );
@@ -119,7 +129,7 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function getConfirmText() {
-    return $this->t('Switch to Using Multiple Profiles');
+    return $this->t('Switch to Multiple Profile Types');
   }
 
   /**
@@ -142,8 +152,8 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
     // warning message to the user.
     if ($incompatible_modules) {
       $this->messenger()->addWarning($this->t('The following modules are
-        running incompatible versions for the switch to split profiles and it
-        could possibly render the site as unusable.
+        running versions that are incompatible with using multiple profile types
+        and it could possibly render the site as unusable.
         <p><strong>@modules</strong></p>
         <p>Please upgrade and try again.</p>', [
           '@modules' => implode('<br>', $incompatible_modules)
@@ -164,19 +174,19 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
     $order_type = $this->entity;
 
     // Create the billing and shipping profile types.
-    $this->createBillingShippingProfiles();
+    $this->createProfileTypes();
 
     // Migrate any fields added to the customer profile type to the billing and
     // shipping profile types.
-    $this->migrateProfileFields();
+    $this->migrateProfileTypeFields();
 
     // Batch process to migrate the existing order profiles from the customer
     // profile type to use the billing/shipping profile types.
     $this->migrateExistingProfiles();
 
-    // Set the useSingleProfile field to FALSE now that we've processed
+    // Set the useMultipleProfileTypes field to TRUE now that we've processed
     // everything.
-    $order_type->setUseSingleProfile(FALSE);
+    $order_type->setuseMultipleProfileTypes(TRUE);
     $order_type->save();
 
     $form_state->setRedirectUrl($order_type->toUrl('collection'));
@@ -185,48 +195,41 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
   /**
    * Create the billing and shipping profile types, if not already created.
    */
-  protected function createBillingShippingProfiles() {
-    $profile_type_storage = $this->entityTypeManager->getStorage('profile_type');
-    /** @var \Drupal\profile\Entity\ProfileTypeInterface $billing_profile_type */
-    $billing_profile_type = $profile_type_storage->load('customer_billing');
+  protected function createProfileTypes() {
+    $profile_types = [
+      OrderType::PROFILE_BILLING,
+      OrderType::PROFILE_SHIPPING,
+    ];
+
+    foreach ($profile_types as $profile_type_id) {
+      $this->createProfileType($profile_type_id);
+    }
+  }
+
+  /**
+   * Creates a profile type entity from config.
+   *
+   * @param string $profile_type_id
+   *   The ID of the profile type to create.
+   */
+  protected function createProfileType($profile_type_id) {
+    $profile_type = $this->entityTypeManager->getStorage('profile_type')->load($profile_type_id);
+    if ($profile_type) {
+      return;
+    }
 
     // Import YAML config.
-    $config_path = drupal_get_path('module',
-        'commerce_order') . '/config/shipping_billing_profiles';
+    $config_path = drupal_get_path('module', 'commerce_order') . '/config/profile_types';
     $source = new FileStorage($config_path);
-    $config_storage = $this->configStorage;
 
-    if (!$billing_profile_type) {
-      $billing_configs = [
-        'core.entity_form_display.profile.customer_billing.default',
-        'core.entity_view_display.profile.customer_billing.default',
-        'field.field.profile.customer_billing.address',
-        'profile.type.customer_billing',
-      ];
-      foreach ($billing_configs as $config_name) {
-        $config_storage->write($config_name, $source->read($config_name));
-      }
-    }
-
-    /** @var \Drupal\profile\Entity\ProfileTypeInterface $shipping_profile_type */
-    $shipping_profile_type = $profile_type_storage->load('customer_shipping');
-
-    if (!$shipping_profile_type) {
-      $shipping_configs = [
-        'core.entity_form_display.profile.customer_shipping.default',
-        'core.entity_view_display.profile.customer_shipping.default',
-        'field.field.profile.customer_shipping.address',
-        'profile.type.customer_shipping',
-      ];
-      foreach ($shipping_configs as $config_name) {
-        $config_storage->write($config_name, $source->read($config_name));
-      }
-    }
-
-    if (!$billing_profile_type || !$shipping_profile_type) {
-      $this->messenger()->addMessage($this->t('Billing and shipping profile
-        types have been successfully created.'
-      ));
+    $configs = [
+      "core.entity_form_display.profile.$profile_type_id.default",
+      "core.entity_view_display.profile.$profile_type_id.default",
+      "field.field.profile.$profile_type_id.address",
+      "profile.type.$profile_type_id",
+    ];
+    foreach ($configs as $config_name) {
+      $this->configStorage->write($config_name, $source->read($config_name));
     }
   }
 
@@ -238,13 +241,13 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
    */
   protected function migrateProfileFields() {
     // Grab the field definitions from the customer profile type.
-    $field_definitions = $this->entityFieldManager->getFieldDefinitions('profile', 'customer');
+    $field_definitions = $this->entityFieldManager->getFieldDefinitions('profile', OrderType::PROFILE_COMMON);
 
     // Let's copy the fields in the 'customer' profile to the billing/shipping
     // profile types.
     $profile_bundles = [
-      'customer_billing',
-      'customer_shipping',
+      OrderType::PROFILE_BILLING,
+      OrderType::PROFILE_SHIPPING,
     ];
     foreach ($profile_bundles as $bundle) {
       // Grab the field definitions from the customer profile type.
@@ -253,7 +256,7 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
       foreach ($field_definitions as $field_name => $field_definition) {
         /** @var \Drupal\Core\Field\FieldDefinitionInterface $field_definition */
         // Don't copy the base fields and the address field.
-        if ($field_definition->getFieldStorageDefinition()->isBaseField() == TRUE) {
+        if ($field_definition->getFieldStorageDefinition()->isBaseField()) {
           continue;
         }
 
@@ -270,8 +273,8 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
     }
 
     $this->messenger()->addMessage($this->t('Fields from the customer 
-      profile have been successfully copied to the billing and shipping profile
-      entities.'
+      profile type have been successfully copied to the billing and shipping
+      profile types.'
     ));
   }
 
@@ -339,7 +342,7 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
           ]) . '</p>';
 
       $description .= '<p>' . $this->t('All of these existing orders will
-        be migrated to use the split shipping and billing profiles.'
+        be migrated to use the split shipping and billing profile types.'
         ) . '</p>';
     }
 
@@ -355,10 +358,12 @@ class UseMultiProfileConfirmForm extends ConfirmFormBase {
   protected function getIncompatibleModules() {
     $incompatible_modules = [];
 
+    // TODO: We don't know yet which module version will be supporting multiple
+    // profile types yet. Setting to empty for now.
     $affected_modules = [
-      'commerce_pos' => '2.2',
-      'commerce_shipping' => '2.2',
-      'commerce_amws' => '2.2',
+      'commerce_pos' => '',
+      'commerce_shipping' => '',
+      'commerce_amws' => '',
     ];
 
     foreach ($affected_modules as $module => $expected_version) {

@@ -72,7 +72,7 @@ class PaymentMethodAddForm extends PaymentGatewayFormBase {
         $order_type_storage = $this->entityTypeManager->getStorage('commerce_order_type');
         /** @var \Drupal\commerce_order\Entity\OrderTypeInterface $order_type */
         $order_type = $order_type_storage->load($order->bundle());
-        $billing_profile_id = $order_type->getBillingProfileId();
+        $billing_profile_id = $order_type->getBillingProfileTypeId();
       }
 
       /** @var \Drupal\profile\Entity\ProfileInterface $billing_profile */

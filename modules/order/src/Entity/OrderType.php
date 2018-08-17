@@ -41,7 +41,7 @@ use Drupal\commerce\Entity\CommerceBundleEntityBase;
  *     "label",
  *     "id",
  *     "workflow",
- *     "useSingleProfile",
+ *     "useMultipleProfileTypes",
  *     "refresh_mode",
  *     "refresh_frequency",
  *     "sendReceipt",
@@ -53,7 +53,7 @@ use Drupal\commerce\Entity\CommerceBundleEntityBase;
  *     "add-form" = "/admin/commerce/config/order-types/add",
  *     "edit-form" = "/admin/commerce/config/order-types/{commerce_order_type}/edit",
  *     "delete-form" = "/admin/commerce/config/order-types/{commerce_order_type}/delete",
- *     "use-multi-profile-form" = "/admin/commerce/config/order-types/{commerce_order_type}/use-multi-profile",
+ *     "multiple-profile-types-form" = "/admin/commerce/config/order-types/{commerce_order_type}/multiple-profile-types",
  *     "collection" = "/admin/commerce/config/order-types"
  *   }
  * )
@@ -68,11 +68,11 @@ class OrderType extends CommerceBundleEntityBase implements OrderTypeInterface {
   protected $workflow;
 
   /**
-   * Boolean indicating whether to use single profile for this order type.
+   * Boolean indicating whether to use multiple profile types for order type.
    *
    * @var bool
    */
-  protected $useSingleProfile;
+  protected $useMultipleProfileTypes;
 
   /**
    * The order type refresh mode.
@@ -120,15 +120,15 @@ class OrderType extends CommerceBundleEntityBase implements OrderTypeInterface {
   /**
    * {@inheritdoc}
    */
-  public function useSingleProfile() {
-    return $this->useSingleProfile;
+  public function useMultipleProfileTypes() {
+    return $this->useMultipleProfileTypes;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function setUseSingleProfile($use_single_profile) {
-    $this->useSingleProfile = $use_single_profile;
+  public function setUseMultipleProfileTypes($use_multiple_profile_types) {
+    $this->useMultipleProfileTypes = $use_multiple_profile_types;
     return $this;
   }
 
@@ -196,23 +196,23 @@ class OrderType extends CommerceBundleEntityBase implements OrderTypeInterface {
   /**
    * {@inheritdoc}
    */
-  public function getBillingProfileId() {
-    if (!$this->useSingleProfile()) {
-      return 'customer_billing';
+  public function getBillingProfileTypeId() {
+    if ($this->useMultipleProfileTypes()) {
+      return OrderType::PROFILE_BILLING;
     }
 
-    return 'customer';
+    return OrderType::PROFILE_COMMON;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getShippingProfileId() {
-    if (!$this->useSingleProfile()) {
-      return 'customer_shipping';
+  public function getShippingProfileTypeId() {
+    if ($this->useMultipleProfileTypes()) {
+      return OrderType::PROFILE_SHIPPING;
     }
 
-    return 'customer';
+    return OrderType::PROFILE_COMMON;
   }
 
 }
