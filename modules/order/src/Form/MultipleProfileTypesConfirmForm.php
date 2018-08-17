@@ -178,7 +178,7 @@ class MultipleProfileTypesConfirmForm extends ConfirmFormBase {
 
     // Migrate any fields added to the customer profile type to the billing and
     // shipping profile types.
-    $this->migrateProfileTypeFields();
+    $this->migrateProfileFields();
 
     // Batch process to migrate the existing order profiles from the customer
     // profile type to use the billing/shipping profile types.
