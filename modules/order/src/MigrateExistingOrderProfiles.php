@@ -47,7 +47,7 @@ class MigrateExistingOrderProfiles {
       ->getStorage('commerce_order');
     foreach ($order_ids as $order_id) {
       /** @var \Drupal\commerce_order\Entity\OrderInterface $order */
-      $order_storage->load($order_id);
+      $order = $order_storage->load($order_id);
 
       $billing_profile = self::processBillingProfile($order);
       self::processShippingProfiles($order, $billing_profile);
