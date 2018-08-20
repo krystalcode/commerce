@@ -124,7 +124,7 @@ class OrderRefreshTest extends CommerceKernelTestBase {
     $this->variation2 = $this->reloadEntity($variation2);
 
     $profile = Profile::create([
-      'type' => 'customer',
+      'type' => OrderType::PROFILE_COMMON,
     ]);
     $profile->save();
     $profile = $this->reloadEntity($profile);

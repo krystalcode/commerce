@@ -3,6 +3,7 @@
 namespace Drupal\Tests\commerce_payment\Kernel;
 
 use Drupal\commerce_order\Entity\Order;
+use Drupal\commerce_order\Entity\OrderType;
 use Drupal\commerce_payment\Entity\PaymentGateway;
 use Drupal\profile\Entity\Profile;
 use Drupal\Tests\commerce\Kernel\CommerceKernelTestBase;
@@ -73,7 +74,7 @@ class FilterPaymentGatewaysEventTest extends CommerceKernelTestBase {
     $payment_gateway_filtered->save();
 
     $profile = Profile::create([
-      'type' => 'customer',
+      'type' => OrderType::PROFILE_COMMON,
     ]);
     $profile->save();
     $profile = $this->reloadEntity($profile);

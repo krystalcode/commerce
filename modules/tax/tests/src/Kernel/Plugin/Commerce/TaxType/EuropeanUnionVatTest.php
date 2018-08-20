@@ -5,6 +5,7 @@ namespace Drupal\Tests\commerce_tax\Kernel\Plugin\Commerce\TaxType;
 use Drupal\commerce_order\Entity\Order;
 use Drupal\commerce_order\Entity\OrderItem;
 use Drupal\commerce_order\Entity\OrderItemType;
+use Drupal\commerce_order\Entity\OrderType;
 use Drupal\commerce_price\Price;
 use Drupal\commerce_store\Entity\Store;
 use Drupal\commerce_tax\Plugin\Commerce\TaxType\EuropeanUnionVat;
@@ -173,7 +174,7 @@ class EuropeanUnionVatTest extends CommerceKernelTestBase {
     ]);
     $store->save();
     $customer_profile = Profile::create([
-      'type' => 'customer',
+      'type' => OrderType::PROFILE_COMMON,
       'uid' => $this->user->id(),
       'address' => [
         'country_code' => $customer_country,

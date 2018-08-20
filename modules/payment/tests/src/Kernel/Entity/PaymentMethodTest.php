@@ -3,6 +3,7 @@
 namespace Drupal\Tests\commerce_payment\Kernel\Entity;
 
 use Drupal\commerce_order\Entity\OrderItemType;
+use Drupal\commerce_order\Entity\OrderType;
 use Drupal\commerce_payment\Entity\PaymentGateway;
 use Drupal\commerce_payment\Entity\PaymentMethod;
 use Drupal\commerce_payment\Plugin\Commerce\PaymentMethodType\CreditCard;
@@ -95,7 +96,7 @@ class PaymentMethodTest extends CommerceKernelTestBase {
   public function testPaymentMethod() {
     /** @var \Drupal\profile\Entity\ProfileInterface $profile */
     $profile = Profile::create([
-      'type' => 'customer',
+      'type' => OrderType::PROFILE_COMMON,
     ]);
     $profile->save();
     $profile = $this->reloadEntity($profile);

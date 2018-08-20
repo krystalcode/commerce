@@ -3,6 +3,7 @@
 namespace Drupal\Tests\commerce_payment\Functional;
 
 use Drupal\commerce_order\Entity\OrderItemType;
+use Drupal\commerce_order\Entity\OrderType;
 use Drupal\commerce_payment\Entity\Payment;
 use Drupal\commerce_price\Price;
 use Drupal\Core\Url;
@@ -71,7 +72,7 @@ class DefaultPaymentAdminTest extends CommerceBrowserTestBase {
     parent::setUp();
 
     $profile = $this->createEntity('profile', [
-      'type' => 'customer',
+      'type' => OrderType::PROFILE_COMMON,
       'address' => [
         'country_code' => 'US',
         'postal_code' => '53177',
