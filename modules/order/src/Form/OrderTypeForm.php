@@ -198,7 +198,7 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
       // case, the user cancels out of switching to multi profiles. We'll turn
       // it to FALSE, once the user has confirmed and we've processed everything
       // in the confirm submit.
-      $order_type->setuseMultipleProfileTypes(FALSE);
+      $order_type->setUseMultipleProfileTypes(FALSE);
 
       // Remove the destination as we want to go to the confirm page.
       $this->request->query->remove('destination');

@@ -186,7 +186,7 @@ class MultipleProfileTypesConfirmForm extends ConfirmFormBase {
 
     // Set the useMultipleProfileTypes field to TRUE now that we've processed
     // everything.
-    $order_type->setuseMultipleProfileTypes(TRUE);
+    $order_type->setUseMultipleProfileTypes(TRUE);
     $order_type->save();
 
     $form_state->setRedirectUrl($order_type->toUrl('collection'));
@@ -374,6 +374,14 @@ class MultipleProfileTypesConfirmForm extends ConfirmFormBase {
 
       if (empty($module_info['version'])) {
         continue;
+      }
+
+      if (empty($expected_version)) {
+        $incompatible_modules[] = $this->t(
+          '@module_name does not have a compatible version yet', [
+            '@module_name' => $module,
+          ]
+        );
       }
 
       // TODO: Find a reliable way to extract the module version.

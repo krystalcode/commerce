@@ -54,7 +54,7 @@ interface OrderTypeInterface extends CommerceBundleEntityInterface {
    *
    * @return $this
    */
-  public function setuseMultipleProfileTypes($use_multiple_profile_types);
+  public function setUseMultipleProfileTypes($use_multiple_profile_types);
 
   /**
    * Gets the order type's billing profile ID.
