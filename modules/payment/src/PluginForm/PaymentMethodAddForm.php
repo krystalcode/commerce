@@ -2,6 +2,7 @@
 
 namespace Drupal\commerce_payment\PluginForm;
 
+use Drupal\commerce_order\Entity\OrderType;
 use Drupal\commerce_payment\CreditCard;
 use Drupal\commerce_payment\Exception\DeclineException;
 use Drupal\commerce_payment\Exception\PaymentGatewayException;
@@ -65,7 +66,7 @@ class PaymentMethodAddForm extends PaymentGatewayFormBase {
     /** @var \Drupal\profile\Entity\ProfileInterface $billing_profile */
     $billing_profile = $payment_method->getBillingProfile();
     if (!$billing_profile) {
-      $billing_profile_id = 'customer';
+      $billing_profile_id = OrderType::PROFILE_COMMON;
       $order = $this->routeMatch->getParameter('commerce_order');
 
       if ($order) {
