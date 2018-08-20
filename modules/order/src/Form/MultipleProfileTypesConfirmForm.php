@@ -364,6 +364,7 @@ class MultipleProfileTypesConfirmForm extends ConfirmFormBase {
       'commerce_pos' => '',
       'commerce_shipping' => '',
       'commerce_amws' => '',
+      'commerce_qb_webconnect' => '',
     ];
 
     foreach ($affected_modules as $module => $expected_version) {
