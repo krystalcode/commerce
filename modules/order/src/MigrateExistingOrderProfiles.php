@@ -145,11 +145,60 @@ class MigrateExistingOrderProfiles {
         $new_shipping_profile->set('type', OrderType::PROFILE_SHIPPING);
         $new_shipping_profile->save();
 
+        // Change the shipment reference to our newly created shipping profile.
         /** @var \Drupal\commerce_shipping\Entity\ShipmentInterface $shipment */
         $shipment->setShippingProfile($new_shipping_profile);
         $shipment->save();
+
+        // Let's also take into account that this profile could have been used
+        // for another order or orders. So, let's grab all other shipments that
+        // referenced this same profile and change the references to our newly
+        // created shipping profile.
+        $this->changeShippingProfileReferences($shipping_profile, $new_shipping_profile);
       }
     }
+  }
+
+  /**
+   * Change the shipping profile reference on orders to the new profile.
+   *
+   * Grab all other orders that reference the original profile and change the
+   * references to our newly created shipping profile.
+   *
+   * @param \Drupal\profile\Entity\ProfileInterface $original_profile
+   *   The original profile that the orders are referencing.
+   * @param \Drupal\profile\Entity\ProfileInterface $new_shipping_profile
+   *   The newly created shipping profile that they should reference.
+   */
+  protected function changeShippingProfileReferences(ProfileInterface $original_profile, ProfileInterface $new_shipping_profile) {
+    $shipments = $this->getReferencedShipments($original_profile->id());
+
+    foreach ($shipments as $shipment) {
+      /** @var \Drupal\commerce_shipping\Entity\ShipmentInterface $shipment */
+      $shipment->setShippingProfile($new_shipping_profile);
+      $shipment->save();
+    }
+  }
+
+  /**
+   * Grab all shipments that reference a profile.
+   *
+   * @param int $profile_id
+   *   The ID of the profile that the shipments are referencing.
+   *
+   * @return array
+   *   Returns an array of shipment entities.
+   */
+  protected function getReferencedShipments($profile_id) {
+    $shipment_storage = \Drupal::entityTypeManager()->getStorage('commerce_shipment');
+    $shipment_ids = $shipment_storage
+      ->getQuery()
+      ->condition('shipping_profile.target_id', $profile_id)
+      ->execute();
+
+    $shipments = $shipment_storage->loadMultiple($shipment_ids);
+
+    return $shipments;
   }
 
 }
