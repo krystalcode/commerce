@@ -3,6 +3,7 @@
 namespace Drupal\Tests\commerce_payment\Kernel;
 
 use Drupal\commerce_order\Entity\OrderItemType;
+use Drupal\commerce_order\Entity\OrderType;
 use Drupal\commerce_payment\Entity\PaymentGateway;
 use Drupal\commerce_payment\Entity\PaymentMethod;
 use Drupal\profile\Entity\Profile;
@@ -154,7 +155,7 @@ class PaymentMethodStorageTest extends CommerceKernelTestBase {
   public function testBillingCountryFiltering() {
     /** @var \Drupal\profile\Entity\Profile $profile_fr */
     $profile_fr = Profile::create([
-      'type' => 'customer',
+      'type' => OrderType::PROFILE_COMMON,
       'address' => [
         'organization' => '',
         'country_code' => 'FR',
@@ -180,7 +181,7 @@ class PaymentMethodStorageTest extends CommerceKernelTestBase {
     $this->assertEmpty($this->storage->loadReusable($this->user, $this->paymentGateway, ['US']));
 
     $profile_us = Profile::create([
-      'type' => 'customer',
+      'type' => OrderType::PROFILE_COMMON,
       'address' => [
         'country_code' => 'US',
         'postal_code' => '53177',

@@ -5,6 +5,7 @@ namespace Drupal\Tests\commerce_payment\FunctionalJavascript;
 use Drupal\commerce_checkout\Entity\CheckoutFlow;
 use Drupal\commerce_order\Adjustment;
 use Drupal\commerce_order\Entity\Order;
+use Drupal\commerce_order\Entity\OrderType;
 use Drupal\commerce_payment\Entity\Payment;
 use Drupal\commerce_payment\Entity\PaymentGateway;
 use Drupal\Tests\commerce\Functional\CommerceBrowserTestBase;
@@ -149,7 +150,7 @@ class PaymentCheckoutTest extends CommerceBrowserTestBase {
     $gateway->save();
 
     $profile = $this->createEntity('profile', [
-      'type' => 'customer',
+      'type' => OrderType::PROFILE_COMMON,
       'address' => [
         'country_code' => 'US',
         'postal_code' => '53177',

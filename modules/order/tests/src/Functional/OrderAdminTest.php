@@ -4,6 +4,7 @@ namespace Drupal\Tests\commerce_order\Functional;
 
 use Drupal\commerce_order\Adjustment;
 use Drupal\commerce_order\Entity\Order;
+use Drupal\commerce_order\Entity\OrderType;
 use Drupal\commerce_price\Price;
 use Drupal\profile\Entity\Profile;
 
@@ -29,7 +30,7 @@ class OrderAdminTest extends OrderBrowserTestBase {
     \Drupal::service('module_installer')->install(['profile']);
 
     $profile_values = [
-      'type' => 'customer',
+      'type' => OrderType::PROFILE_COMMON,
       'uid' => 1,
       'status' => 1,
     ];

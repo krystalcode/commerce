@@ -78,7 +78,7 @@ class OrderReceiptTest extends CommerceKernelTestBase {
     $product->addVariation($variation1)->save();
 
     $profile = Profile::create([
-      'type' => 'customer',
+      'type' => OrderType::PROFILE_COMMON,
     ]);
     $profile->save();
     $profile = $this->reloadEntity($profile);
