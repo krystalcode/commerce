@@ -2,12 +2,14 @@
 
 namespace Drupal\Tests\commerce_order\Functional;
 
+use Drupal\Tests\commerce_order\Kernel\MultipleProfileTypesTest;
+
 /**
  * Tests the multiple profile types functionality.
  *
  * @group commerce
  */
-class MultipleProfileTypesFieldTest extends OrderBrowserTestBase {
+class MultipleProfileTypesFormTest extends OrderBrowserTestBase {
 
   /**
    * {@inheritdoc}
@@ -52,7 +54,7 @@ class MultipleProfileTypesFieldTest extends OrderBrowserTestBase {
    *
    * @group failing
    */
-  public function testMultipleProfileTypesConfirmForm() {
+  public function testMultipleProfileTypesConfirmFormCancel() {
     $web_assert = $this->assertSession();
 
     // Let's submit the default order type form with the useMultipleProfileTypes
