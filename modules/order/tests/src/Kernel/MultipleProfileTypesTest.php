@@ -4,8 +4,10 @@ namespace Drupal\Tests\commerce_order\Kernel;
 
 use Drupal\commerce_product\Entity\ProductVariation;
 use Drupal\commerce_order\Entity\Order;
+use Drupal\commerce_order\Entity\OrderInterface;
 use Drupal\commerce_order\Entity\OrderItem;
 use Drupal\commerce_order\Entity\OrderType;
+use Drupal\commerce_order\Form\MultipleProfileTypesConfirmForm;
 use Drupal\commerce_price\Price;
 use Drupal\commerce_shipping\Entity\Shipment;
 use Drupal\commerce_shipping\ShipmentItem;
@@ -56,58 +58,81 @@ class MultipleProfileTypesTest extends ShippingKernelTestBase {
     /** @var \Drupal\commerce_order\Entity\OrderInterface $order */
     // Create an order.
     $order = $this->createOrder();
-    /** @var \Drupal\commerce_shipping\Entity\ShipmentInterface $shipment */
-    $shipment = $this->shipment;
 
-    // Create a billing profile and save it to the order.
-    /** @var \Drupal\profile\Entity\ProfileInterface $billing_profile */
-    $billing_profile = Profile::create([
-      'type' => $this->order_type->getBillingProfileTypeId(),
-      'address' => [
-        'country_code' => 'US',
-      ],
-    ]);
-    $billing_profile->save();
-    $billing_profile = $this->reloadEntity($billing_profile);
-    $order->setBillingProfile($billing_profile);
-    $order->save();
-    $order = $this->reloadEntity($order);
-
-    // Create a shipping profile and save it to the shipment.
-    /** @var \Drupal\profile\Entity\ProfileInterface $profile */
-    $shipping_profile = Profile::create([
-      'type' => $this->order_type->getShippingProfileTypeId(),
-      'address' => [
-        'country_code' => 'FR',
-      ],
-    ]);
-    $shipping_profile->save();
-    $shipping_profile = $this->reloadEntity($shipping_profile);
-    $shipment->setShippingProfile($shipping_profile);
-    $shipment->save();
-    $this->shipment = $this->reloadEntity($shipment);
+    // Create the billing and shipping profiles.
+    $order = $this->createProfiles($order);
 
     // Now, let's test that by default the order type uses a single profile type
     // for both billing and shipping.
+    // Billing.
     /** @var \Drupal\profile\Entity\ProfileInterface $billing_profile */
     $billing_profile = $order->getBillingProfile();
 
     // Assert that the billing profile type for this order is 'customer'.
     $this->assertEquals(OrderType::PROFILE_COMMON, $billing_profile->bundle());
 
+    // Assert the address is what we're expecting.
+    $this->assertEquals('US', $billing_profile->address->first()->getCountryCode());
+
+    // Shipping.
     foreach ($order->shipments->referencedEntities() as $shipment) {
       /** @var \Drupal\profile\Entity\ProfileInterface $shipping_profile */
       $shipping_profile = $shipment->getShippingProfile();
 
       // Assert that the shipping profile type for this order is 'customer'.
       $this->assertEquals(OrderType::PROFILE_COMMON, $shipping_profile->bundle());
+
+      // Assert the address is what we're expecting.
+      $this->assertEquals('FR', $shipping_profile->address->first()->getCountryCode());
     }
+  }
+
+  /**
+   * Tests the creation of the new billing and shipping profile types.
+   */
+  public function testProfileTypesCreation() {
+    // Create the new profile types.
+    $profile_types_confirm_form = new MultipleProfileTypesConfirmForm(
+      \Drupal::service('current_route_match'),
+      \Drupal::service('entity_type.manager'),
+      \Drupal::service('entity_field.manager')
+    );
+    $profile_types_confirm_form->createProfileTypes();
+
+    // Assert that we have a customer_billing profile type.
+    /** @var \Drupal\profile\Entity\ProfileTypeInterface $profile_type */
+    $profile_type = \Drupal::service('entity_type.manager')->getStorage('profile_type')->load(OrderType::PROFILE_BILLING);
+    $this->assertNotNull($profile_type);
+    $this->assertEquals(OrderType::PROFILE_BILLING, $profile_type->id());
+    $this->assertEquals(t('Customer Billing'), $profile_type->label());
+    // Assert that the address field exists.
+    $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('profile', OrderType::PROFILE_BILLING);
+    $this->assertNotNull($field_definitions['address']);
+
+    // Assert that we have a customer_shipping profile type.
+    /** @var \Drupal\profile\Entity\ProfileTypeInterface $profile_type */
+    $profile_type = \Drupal::service('entity_type.manager')->getStorage('profile_type')->load(OrderType::PROFILE_SHIPPING);
+    $this->assertNotNull($profile_type);
+    $this->assertEquals(OrderType::PROFILE_SHIPPING, $profile_type->id());
+    $this->assertEquals(t('Customer Shipping'), $profile_type->label());
+    // Assert that the address field exists.
+    $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('profile', OrderType::PROFILE_SHIPPING);
+    $this->assertNotNull($field_definitions['address']);
   }
 
   /**
    * Test the order has multiple profile types for billing and shipping.
    */
   public function testOrderMultipleProfileTypes() {
+    // First, create our new profile types.
+    $profile_types_confirm_form = new MultipleProfileTypesConfirmForm(
+      \Drupal::service('current_route_match'),
+      \Drupal::service('entity_type.manager'),
+      \Drupal::service('entity_field.manager')
+    );
+    $profile_types_confirm_form->createProfileTypes();
+
+    // Now, change the order type to use multiple profile types.
     /** @var \Drupal\commerce_order\Entity\OrderType $order_type */
     $order_type = $this->order_type;
     $order_type->setUseMultipleProfileTypes(TRUE);
@@ -117,39 +142,13 @@ class MultipleProfileTypesTest extends ShippingKernelTestBase {
     /** @var \Drupal\commerce_order\Entity\OrderInterface $order */
     // Create an order.
     $order = $this->createOrder();
-    /** @var \Drupal\commerce_shipping\Entity\ShipmentInterface $shipment */
-    $shipment = $this->shipment;
 
-    // Create a billing profile and save it to the order.
-    /** @var \Drupal\profile\Entity\ProfileInterface $billing_profile */
-    $billing_profile = Profile::create([
-      'type' => $this->order_type->getBillingProfileTypeId(),
-      'address' => [
-        'country_code' => 'US',
-      ],
-    ]);
-    $billing_profile->save();
-    $billing_profile = $this->reloadEntity($billing_profile);
-    $order->setBillingProfile($billing_profile);
-    $order->save();
-    $order = $this->reloadEntity($order);
-
-    // Create a shipping profile and save it to the shipment.
-    /** @var \Drupal\profile\Entity\ProfileInterface $profile */
-    $shipping_profile = Profile::create([
-      'type' => $this->order_type->getShippingProfileTypeId(),
-      'address' => [
-        'country_code' => 'FR',
-      ],
-    ]);
-    $shipping_profile->save();
-    $shipping_profile = $this->reloadEntity($shipping_profile);
-    $shipment->setShippingProfile($shipping_profile);
-    $shipment->save();
-    $this->shipment = $this->reloadEntity($shipment);
+    // Create the billing and shipping profiles.
+    $order = $this->createProfiles($order);
 
     // Now, let's test that the order type now uses multiple profile types for
     // both billing and shipping.
+    // Billing.
     /** @var \Drupal\profile\Entity\ProfileInterface $billing_profile */
     $billing_profile = $order->getBillingProfile();
 
@@ -157,6 +156,10 @@ class MultipleProfileTypesTest extends ShippingKernelTestBase {
     // 'customer_billing'.
     $this->assertEquals(OrderType::PROFILE_BILLING, $billing_profile->bundle());
 
+    // Assert the address is what we're expecting.
+    $this->assertEquals('US', $billing_profile->address->first()->getCountryCode());
+
+    // Shipping.
     foreach ($order->shipments->referencedEntities() as $shipment) {
       /** @var \Drupal\profile\Entity\ProfileInterface $shipping_profile */
       $shipping_profile = $shipment->getShippingProfile();
@@ -164,6 +167,9 @@ class MultipleProfileTypesTest extends ShippingKernelTestBase {
       // Assert that the shipping profile type for this order is
       // 'customer_shipping'.
       $this->assertEquals(OrderType::PROFILE_SHIPPING, $shipping_profile->bundle());
+
+      // Assert the address is what we're expecting.
+      $this->assertEquals('FR', $shipping_profile->address->first()->getCountryCode());
     }
   }
 
@@ -173,7 +179,7 @@ class MultipleProfileTypesTest extends ShippingKernelTestBase {
    * @return \Drupal\commerce_order\Entity\Order
    *   The newly created order entity.
    */
-  public function createOrder() {
+  protected function createOrder() {
     // Create a product variation and order item.
     $variation = ProductVariation::create([
       'type' => 'default',
@@ -238,6 +244,50 @@ class MultipleProfileTypesTest extends ShippingKernelTestBase {
     $order->set('shipments', [$shipment]);
     $order->save();
     $order = $this->reloadEntity($order);
+
+    return $order;
+  }
+
+  /**
+   * Create a billing and shipping profile and save it to the order.
+   *
+   * @param \Drupal\commerce_order\Entity\OrderInterface $order
+   *   The order entity that we'll save the profiles to.
+   *
+   * @return \Drupal\commerce_order\Entity\OrderInterface
+   *   The updated order entity.
+   */
+  protected function createProfiles(OrderInterface $order) {
+    /** @var \Drupal\commerce_shipping\Entity\ShipmentInterface $shipment */
+    $shipment = $this->shipment;
+
+    // Create a billing profile and save it to the order.
+    /** @var \Drupal\profile\Entity\ProfileInterface $billing_profile */
+    $billing_profile = Profile::create([
+      'type' => $this->order_type->getBillingProfileTypeId(),
+      'address' => [
+        'country_code' => 'US',
+      ],
+    ]);
+    $billing_profile->save();
+    $billing_profile = $this->reloadEntity($billing_profile);
+    $order->setBillingProfile($billing_profile);
+    $order->save();
+    $order = $this->reloadEntity($order);
+
+    // Create a shipping profile and save it to the shipment.
+    /** @var \Drupal\profile\Entity\ProfileInterface $profile */
+    $shipping_profile = Profile::create([
+      'type' => $this->order_type->getShippingProfileTypeId(),
+      'address' => [
+        'country_code' => 'FR',
+      ],
+    ]);
+    $shipping_profile->save();
+    $shipping_profile = $this->reloadEntity($shipping_profile);
+    $shipment->setShippingProfile($shipping_profile);
+    $shipment->save();
+    $this->shipment = $this->reloadEntity($shipment);
 
     return $order;
   }
