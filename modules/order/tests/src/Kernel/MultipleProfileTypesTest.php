@@ -45,7 +45,8 @@ class MultipleProfileTypesTest extends ShippingKernelTestBase {
     $this->installEntitySchema('commerce_shipping_method');
 
     // Load the default order type.
-    $order_type_storage = \Drupal::entityTypeManager()->getStorage('commerce_order_type');
+    $order_type_storage = \Drupal::entityTypeManager()
+      ->getStorage('commerce_order_type');
     /** @var \Drupal\commerce_order\Entity\OrderType $order_type */
     $order_type = $order_type_storage->load('default');
     $this->order_type = $order_type;
@@ -72,7 +73,10 @@ class MultipleProfileTypesTest extends ShippingKernelTestBase {
     $this->assertEquals(OrderType::PROFILE_COMMON, $billing_profile->bundle());
 
     // Assert the address is what we're expecting.
-    $this->assertEquals('US', $billing_profile->address->first()->getCountryCode());
+    $this->assertEquals(
+      'US',
+      $billing_profile->address->first()->getCountryCode()
+    );
 
     // Shipping.
     foreach ($order->shipments->referencedEntities() as $shipment) {
@@ -83,7 +87,10 @@ class MultipleProfileTypesTest extends ShippingKernelTestBase {
       $this->assertEquals(OrderType::PROFILE_COMMON, $shipping_profile->bundle());
 
       // Assert the address is what we're expecting.
-      $this->assertEquals('FR', $shipping_profile->address->first()->getCountryCode());
+      $this->assertEquals(
+        'FR',
+        $shipping_profile->address->first()->getCountryCode()
+      );
     }
   }
 
@@ -101,22 +108,28 @@ class MultipleProfileTypesTest extends ShippingKernelTestBase {
 
     // Assert that we have a customer_billing profile type.
     /** @var \Drupal\profile\Entity\ProfileTypeInterface $profile_type */
-    $profile_type = \Drupal::service('entity_type.manager')->getStorage('profile_type')->load(OrderType::PROFILE_BILLING);
+    $profile_type = \Drupal::service('entity_type.manager')
+      ->getStorage('profile_type')
+      ->load(OrderType::PROFILE_BILLING);
     $this->assertNotNull($profile_type);
     $this->assertEquals(OrderType::PROFILE_BILLING, $profile_type->id());
     $this->assertEquals(t('Customer Billing'), $profile_type->label());
     // Assert that the address field exists.
-    $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('profile', OrderType::PROFILE_BILLING);
+    $field_definitions = \Drupal::service('entity_field.manager')
+      ->getFieldDefinitions('profile', OrderType::PROFILE_BILLING);
     $this->assertNotNull($field_definitions['address']);
 
     // Assert that we have a customer_shipping profile type.
     /** @var \Drupal\profile\Entity\ProfileTypeInterface $profile_type */
-    $profile_type = \Drupal::service('entity_type.manager')->getStorage('profile_type')->load(OrderType::PROFILE_SHIPPING);
+    $profile_type = \Drupal::service('entity_type.manager')
+      ->getStorage('profile_type')
+      ->load(OrderType::PROFILE_SHIPPING);
     $this->assertNotNull($profile_type);
     $this->assertEquals(OrderType::PROFILE_SHIPPING, $profile_type->id());
     $this->assertEquals(t('Customer Shipping'), $profile_type->label());
     // Assert that the address field exists.
-    $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('profile', OrderType::PROFILE_SHIPPING);
+    $field_definitions = \Drupal::service('entity_field.manager')
+      ->getFieldDefinitions('profile', OrderType::PROFILE_SHIPPING);
     $this->assertNotNull($field_definitions['address']);
   }
 
@@ -157,7 +170,10 @@ class MultipleProfileTypesTest extends ShippingKernelTestBase {
     $this->assertEquals(OrderType::PROFILE_BILLING, $billing_profile->bundle());
 
     // Assert the address is what we're expecting.
-    $this->assertEquals('US', $billing_profile->address->first()->getCountryCode());
+    $this->assertEquals(
+      'US',
+      $billing_profile->address->first()->getCountryCode()
+    );
 
     // Shipping.
     foreach ($order->shipments->referencedEntities() as $shipment) {
@@ -169,7 +185,10 @@ class MultipleProfileTypesTest extends ShippingKernelTestBase {
       $this->assertEquals(OrderType::PROFILE_SHIPPING, $shipping_profile->bundle());
 
       // Assert the address is what we're expecting.
-      $this->assertEquals('FR', $shipping_profile->address->first()->getCountryCode());
+      $this->assertEquals(
+        'FR',
+        $shipping_profile->address->first()->getCountryCode()
+      );
     }
   }
 
