@@ -3,6 +3,7 @@
 namespace Drupal\Tests\commerce_order\FunctionalJavascript;
 
 use Drupal\commerce_order\Entity\Order;
+use Drupal\commerce_order\Entity\OrderInterface;
 use Drupal\commerce_order\Entity\OrderType;
 use Drupal\commerce_payment\Entity\PaymentGateway;
 use Drupal\commerce_product\Entity\ProductVariationType;
@@ -24,13 +25,6 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
    * @var \Drupal\commerce_product\Entity\ProductInterface
    */
   protected $firstProduct;
-
-  /**
-   * Second sample product.
-   *
-   * @var \Drupal\commerce_product\Entity\ProductInterface
-   */
-  protected $secondProduct;
 
   /**
    * {@inheritdoc}
@@ -67,10 +61,7 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
 
     \Drupal::service('module_installer')->install(['profile']);
 
-    // Limit the available countries.
-    $this->store->shipping_countries = ['US', 'FR', 'DE'];
-    $this->store->save();
-
+    // Create a payment gateway.
     /** @var \Drupal\commerce_payment\Entity\PaymentGateway $gateway */
     $gateway = PaymentGateway::create([
       'id' => 'example_onsite',
@@ -83,10 +74,12 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
     ]);
     $gateway->save();
 
+    // Create a product variation type.
     $product_variation_type = ProductVariationType::load('default');
     $product_variation_type->setTraits(['purchasable_entity_shippable']);
     $product_variation_type->save();
 
+    // Set third party settings.
     $order_type = OrderType::load('default');
     $order_type->setThirdPartySetting('commerce_checkout', 'checkout_flow', 'shipping');
     $order_type->setThirdPartySetting('commerce_shipping', 'shipment_type', 'default');
@@ -94,14 +87,15 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
 
     // Create the order field.
     $field_definition = commerce_shipping_build_shipment_field_definition($order_type->id());
-    \Drupal::service('commerce.configurable_field_manager')->createField($field_definition);
+    \Drupal::service('commerce.configurable_field_manager')
+      ->createField($field_definition);
 
     // Install the variation trait.
     $trait_manager = \Drupal::service('plugin.manager.commerce_entity_trait');
     $trait = $trait_manager->createInstance('purchasable_entity_shippable');
     $trait_manager->installTrait($trait, 'commerce_product_variation', 'default');
 
-    // Create two products.
+    // Create a product.
     $variation = $this->createEntity('commerce_product_variation', [
       'type' => 'default',
       'sku' => strtolower($this->randomMachineName()),
@@ -118,81 +112,14 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
       'stores' => [$this->store],
     ]);
 
-    $variation = $this->createEntity('commerce_product_variation', [
-      'type' => 'default',
-      'sku' => strtolower($this->randomMachineName()),
-      'price' => [
-        'number' => '8.99',
-        'currency_code' => 'USD',
-      ],
-    ]);
-    /** @var \Drupal\commerce_product\Entity\ProductInterface $product */
-    $this->secondProduct = $this->createEntity('commerce_product', [
-      'type' => 'default',
-      'title' => 'Conference bow tie',
-      'variations' => [$variation],
-      'stores' => [$this->store],
-    ]);
-
-    /** @var \Drupal\commerce_shipping\Entity\PackageType $package_type */
-    $package_type = $this->createEntity('commerce_package_type', [
-      'id' => 'package_type_a',
-      'label' => 'Package Type A',
-      'dimensions' => [
-        'length' => 20,
-        'width' => 20,
-        'height' => 20,
-        'unit' => 'mm',
-
-      ],
-      'weight' => [
-        'number' => 20,
-        'unit' => 'g',
-      ],
-    ]);
-    \Drupal::service('plugin.manager.commerce_package_type')->clearCachedDefinitions();
-
-    // Create two flat rate shipping methods.
-    $first_shipping_method = $this->createEntity('commerce_shipping_method', [
-      'name' => 'Overnight shipping',
-      'stores' => [$this->store->id()],
-      'plugin' => [
-        'target_plugin_id' => 'flat_rate',
-        'target_plugin_configuration' => [
-          'default_package_type' => 'commerce_package_type:' . $package_type->get('uuid'),
-          'rate_label' => 'Overnight shipping',
-          'rate_amount' => [
-            'number' => '19.99',
-            'currency_code' => 'USD',
-          ],
-        ],
-      ],
-    ]);
-    $second_shipping_method = $this->createEntity('commerce_shipping_method', [
+    // Create a flat rate shipping method.
+    $shipping_method = $this->createEntity('commerce_shipping_method', [
       'name' => 'Standard shipping',
       'stores' => [$this->store->id()],
-      // Ensure that Standard shipping shows before overnight shipping.
-      'weight' => -10,
       'plugin' => [
         'target_plugin_id' => 'flat_rate',
         'target_plugin_configuration' => [
           'rate_label' => 'Standard shipping',
-          'rate_amount' => [
-            'number' => '9.99',
-            'currency_code' => 'USD',
-          ],
-        ],
-      ],
-    ]);
-    $second_store = $this->createStore();
-    // Should never be shown cause it doesn't belong to the order's store.
-    $third_shipping_method = $this->createEntity('commerce_shipping_method', [
-      'name' => 'Secret shipping',
-      'stores' => [$second_store->id()],
-      'plugin' => [
-        'target_plugin_id' => 'flat_rate',
-        'target_plugin_configuration' => [
-          'rate_label' => 'Secret shipping',
           'rate_amount' => [
             'number' => '9.99',
             'currency_code' => 'USD',
@@ -233,7 +160,7 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
   }
 
   /**
-   * Tests ensuring that the multiple profile types confirm works as expected.
+   * Tests ensuring that the multiple profile types cancel works as expected.
    *
    * @group failing
    */
@@ -277,20 +204,8 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
     // shipping.
     $order = $this->createOrder();
 
-    // Assert that we have 2 profiles created and it's the 'customer' profile
-    // type.
-    $this->drupalGet('/admin/people/profiles');
-    $web_assert->elementsCount('css', 'td.priority-medium', 2);
-    $web_assert->elementTextContains(
-      'css',
-      'body > div > div > main > div > div > table > tbody > tr.odd > td.priority-medium',
-      OrderType::PROFILE_COMMON
-    );
-    $web_assert->elementTextContains(
-      'css',
-      'body > div > div > main > div > div > table > tbody > tr.even > td.priority-medium',
-      OrderType::PROFILE_COMMON
-    );
+    // Assert that we only have a single profile type created for this order.
+    $this->assertSingleProfileTypesCreated();
 
     // Let's submit the default order type form with the useMultipleProfileTypes
     // checkbox checked.
@@ -311,23 +226,78 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
     $this->drupalGet('/admin/commerce/config/order-types/default/edit');
     $web_assert->fieldValueEquals('useMultipleProfileTypes', TRUE);
 
+    // Assert that the existing order has been migrated to use split profile
+    // types.
+    $this->assertMigratingExistingOrders($order);
+  }
+
+  /**
+   * Assert we only have a single profile type for both billing and shipping.
+   */
+  protected function assertSingleProfileTypesCreated() {
+    $web_assert = $this->assertSession();
+
+    // Assert that we have 2 profiles created and it's the 'customer' profile
+    // type.
+    $this->drupalGet('/admin/people/profiles');
+    $web_assert->elementsCount('css', 'td.priority-medium', 2);
+    // First row, should be the shipping profile.
+    $web_assert->elementTextContains(
+      'css',
+      'body > div > div > main > div > div > table > tbody > tr.odd > td.priority-medium',
+      OrderType::PROFILE_COMMON
+    );
+    // Assert the profile ID.
+    $web_assert->elementAttributeContains(
+      'css',
+      'body > div > div > main > div > div > table > tbody > tr.odd > td:nth-child(1) > a',
+      'href',
+      '/profile/1'
+    );
+    // Second row, should be the billing profile.
+    $web_assert->elementTextContains(
+      'css',
+      'body > div > div > main > div > div > table > tbody > tr.even > td.priority-medium',
+      OrderType::PROFILE_COMMON
+    );
+    // Assert the profile ID.
+    $web_assert->elementAttributeContains(
+      'css',
+      'body > div > div > main > div > div > table > tbody > tr.even > td:nth-child(1) > a',
+      'href',
+      '/profile/2'
+    );
+  }
+
+  /**
+   * Assert existing orders have been migrated to use split profile types.
+   *
+   * @param \Drupal\commerce_order\Entity\OrderInterface $order
+   *   The order entity.
+   */
+  protected function assertMigratingExistingOrders(OrderInterface $order) {
+    $web_assert = $this->assertSession();
+
     // Assert that we have a customer_billing profile type.
     /** @var \Drupal\profile\Entity\ProfileTypeInterface $profile_type */
-    $profile_type = \Drupal::service('entity_type.manager')->getStorage('profile_type')->load(OrderType::PROFILE_BILLING);
+    $profile_type = \Drupal::service('entity_type.manager')
+      ->getStorage('profile_type')
+      ->load(OrderType::PROFILE_BILLING);
     $this->assertNotNull($profile_type);
 
     // Assert that we have a customer_shipping profile type.
     /** @var \Drupal\profile\Entity\ProfileTypeInterface $profile_type */
-    $profile_type = \Drupal::service('entity_type.manager')->getStorage('profile_type')->load(OrderType::PROFILE_SHIPPING);
+    $profile_type = \Drupal::service('entity_type.manager')
+      ->getStorage('profile_type')
+      ->load(OrderType::PROFILE_SHIPPING);
     $this->assertNotNull($profile_type);
 
-    // Now, let's test that the order profiles has been changed to now use split
-    // profile types for billing and shipping.
-    // First, create a new order.
-    $controller = \Drupal::service('entity.manager')->getStorage($order->getEntityTypeId());
+    // Now, let's test that the order profiles has been changed for existing
+    // orders and now has split profile types for billing and shipping.
+    $controller = \Drupal::service('entity.manager')
+      ->getStorage($order->getEntityTypeId());
     $controller->resetCache([$order->id()]);
     $order = $controller->load($order->id());
-    $this->drupalGet('/admin/commerce/orders/1/edit');
 
     // Billing.
     /** @var \Drupal\profile\Entity\ProfileInterface $billing_profile */
@@ -359,20 +329,38 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
       );
     }
 
-    // Now, assert via the form.
-    // Assert that we have 2 split profile types for the same order.
+    // Now, let's assert this via the display. Ensure we have 2 profiles but
+    // they're now split profile types.
     $this->drupalGet('/admin/people/profiles');
+    // Assert that we have only 2 profiles created.
     $web_assert->elementsCount('css', 'td.priority-medium', 2);
-    // The shipping profile comes first.
+    // First row, the shipping profile comes first.
+    // Assert the profile type is 'customer_shipping'.
     $web_assert->elementTextContains(
       'css',
       'body > div > div > main > div > div > table > tbody > tr.odd > td.priority-medium',
       OrderType::PROFILE_SHIPPING
     );
+    // Assert the profile ID, to ensure it hasn't changed.
+    $web_assert->elementAttributeContains(
+      'css',
+      'body > div > div > main > div > div > table > tbody > tr.odd > td:nth-child(1) > a',
+      'href',
+      '/profile/1'
+    );
+    // Second row, this is the billing profile.
+    // Assert the profile type is 'customer_billing'.
     $web_assert->elementTextContains(
       'css',
       'body > div > div > main > div > div > table > tbody > tr.even > td.priority-medium',
       OrderType::PROFILE_BILLING
+    );
+    // Assert the profile ID.
+    $web_assert->elementAttributeContains(
+      'css',
+      'body > div > div > main > div > div > table > tbody > tr.even > td:nth-child(1) > a',
+      'href',
+      '/profile/2'
     );
   }
 
@@ -383,16 +371,10 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
    *   The newly created order.
    */
   protected function createOrder() {
-    $web_assert = $this->assertSession();
-
     $this->drupalGet($this->firstProduct->toUrl()->toString());
-    $this->submitForm([], 'Add to cart');
-    $this->drupalGet($this->secondProduct->toUrl()->toString());
     $this->submitForm([], 'Add to cart');
 
     $this->drupalGet('checkout/1');
-    $web_assert->pageTextContains('Shipping information');
-    $web_assert->pageTextNotContains('Shipping method');
 
     $address = [
       'given_name' => 'John',
@@ -413,12 +395,6 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
     $page->findButton('Recalculate shipping')->click();
     $this->waitForAjaxToFinish();
 
-    $web_assert->pageTextContains('Shipping method');
-    $first_radio_button = $page->findField('Standard shipping: $9.99');
-    $second_radio_button = $page->findField('Overnight shipping: $19.99');
-    $this->assertNotNull($first_radio_button);
-    $this->assertNotNull($second_radio_button);
-    $this->assertTrue($first_radio_button->getAttribute('checked'));
     $this->submitForm([
       'payment_information[add_payment_method][payment_details][number]' => '4111111111111111',
       'payment_information[add_payment_method][payment_details][expiration][month]' => '02',
@@ -432,15 +408,7 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
       'payment_information[add_payment_method][billing_information][address][0][address][postal_code]' => '10001',
     ], 'Continue to review');
 
-    // Confirm that the review is rendered correctly.
-    $web_assert->pageTextContains('Shipping information');
-    foreach ($address as $property => $value) {
-      $web_assert->pageTextContains($value);
-    }
-    $web_assert->pageTextContains('Standard shipping');
-    $web_assert->pageTextNotContains('Secret shipping');
-
-    // Confirm the integrity of the shipment.
+    // Submit the form.
     $this->submitForm([], 'Pay and complete purchase');
 
     $order = Order::load(1);
