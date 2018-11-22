@@ -22,11 +22,12 @@ use Drupal\Core\Field\BaseFieldDefinition;
  *     singular = "@count order item",
  *     plural = "@count order items",
  *   ),
- *   bundle_label = @Translation("order item type"),
+ *   bundle_label = @Translation("Order item type"),
  *   handlers = {
  *     "event" = "Drupal\commerce_order\Event\OrderItemEvent",
  *     "storage" = "Drupal\commerce_order\OrderItemStorage",
- *     "access" = "Drupal\commerce\EmbeddedEntityAccessControlHandler",
+ *     "access" = "Drupal\commerce_order\OrderItemAccessControlHandler",
+ *     "permission_provider" = "Drupal\commerce_order\OrderItemPermissionProvider",
  *     "views_data" = "Drupal\commerce_order\OrderItemViewsData",
  *     "form" = {
  *       "default" = "Drupal\Core\Entity\ContentEntityForm",
@@ -302,6 +303,36 @@ class OrderItem extends CommerceContentEntityBase implements OrderItemInterface 
   public function preSave(EntityStorageInterface $storage) {
     parent::preSave($storage);
     $this->recalculateTotalPrice();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function postSave(EntityStorageInterface $storage, $update = TRUE) {
+    parent::postSave($storage, $update);
+
+    $order = $this->getOrder();
+    if ($order && !$order->hasItem($this)) {
+      $order->addItem($this);
+      $order->save();
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function postDelete(EntityStorageInterface $storage, array $entities) {
+    parent::postDelete($storage, $entities);
+
+    /** @var \Drupal\commerce_order\Entity\OrderItemInterface[] $entities */
+    foreach ($entities as $order_item) {
+      // Remove the reference from the order.
+      $order = $order_item->getOrder();
+      if ($order && $order->hasItem($order_item)) {
+        $order->removeItem($order_item);
+        $order->save();
+      }
+    }
   }
 
   /**

@@ -31,7 +31,7 @@ class CheckoutOrderManager implements CheckoutOrderManagerInterface {
    * {@inheritdoc}
    */
   public function getCheckoutFlow(OrderInterface $order) {
-    if ($order->get('checkout_flow')->isEmpty()) {
+    if (!$order->get('checkout_flow')->entity) {
       $checkout_flow = $this->chainCheckoutFlowResolver->resolve($order);
       $order->set('checkout_flow', $checkout_flow);
       $order->save();
@@ -45,7 +45,7 @@ class CheckoutOrderManager implements CheckoutOrderManagerInterface {
    */
   public function getCheckoutStepId(OrderInterface $order, $requested_step_id = NULL) {
     // Customers can't edit orders that have already been placed.
-    if ($order->getState()->value != 'draft') {
+    if ($order->getState()->getId() != 'draft') {
       return 'complete';
     }
     $checkout_flow = $this->getCheckoutFlow($order);

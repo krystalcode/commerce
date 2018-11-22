@@ -36,7 +36,6 @@ class CartOrderPlacedTest extends CommerceKernelTestBase {
    */
   public static $modules = [
     'entity_reference_revisions',
-    'path',
     'profile',
     'state_machine',
     'commerce_product',
@@ -56,6 +55,8 @@ class CartOrderPlacedTest extends CommerceKernelTestBase {
     $this->installEntitySchema('commerce_order_item');
     $this->installConfig('commerce_order');
     $this->installConfig('commerce_product');
+    $this->installCommerceCart();
+
     $this->createUser();
 
     // Create a product variation.
@@ -87,8 +88,6 @@ class CartOrderPlacedTest extends CommerceKernelTestBase {
    * Tests that a draft order is no longer a cart once placed.
    */
   public function testCartOrderPlaced() {
-    $this->installCommerceCart();
-
     $this->store = $this->createStore();
     $cart_order = $this->container->get('commerce_cart.cart_provider')->createCart('default', $this->store, $this->user);
     $this->cartManager = $this->container->get('commerce_cart.cart_manager');
@@ -96,8 +95,7 @@ class CartOrderPlacedTest extends CommerceKernelTestBase {
 
     $this->assertNotEmpty($cart_order->cart->value);
 
-    $workflow = $cart_order->getState()->getWorkflow();
-    $cart_order->getState()->applyTransition($workflow->getTransition('place'));
+    $cart_order->getState()->applyTransitionById('place');
     $cart_order->save();
 
     $cart_order = $this->reloadEntity($cart_order);
