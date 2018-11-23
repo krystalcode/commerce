@@ -34,7 +34,6 @@ class BillingInformation extends CheckoutPaneBase implements CheckoutPaneInterfa
   public function buildPaneForm(array $pane_form, FormStateInterface $form_state, array &$complete_form) {
     $store = $this->order->getStore();
     $billing_profile = $this->order->getBillingProfile();
-
     if (!$billing_profile) {
       $order_type_storage = $this
         ->entityTypeManager

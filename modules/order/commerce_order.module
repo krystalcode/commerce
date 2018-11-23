@@ -240,6 +240,7 @@ function commerce_order_entity_operation_alter(array &$operations, EntityInterfa
 function commerce_order_form_field_config_edit_form_alter(array &$form, FormStateInterface $form_state) {
   /** @var \Drupal\Core\Field\FieldConfigInterface $entity */
   $entity = $form_state->getFormObject()->getEntity();
+
   if (!commerce_order_entity_is_supported_profile_address($entity)) {
     return;
   }

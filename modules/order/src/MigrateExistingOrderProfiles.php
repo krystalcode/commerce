@@ -67,8 +67,8 @@ class MigrateExistingOrderProfiles {
       $message = \Drupal::translation()->translate(
         'The following orders were successfully migrated to
           use split profiles for billing and shipping: @order_ids.', [
-            '@order_ids' => implode(', ', $results),
-          ]
+          '@order_ids' => implode(', ', $results),
+        ]
       );
     }
     else {

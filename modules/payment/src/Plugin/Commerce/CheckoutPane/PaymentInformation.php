@@ -273,6 +273,7 @@ class PaymentInformation extends CheckoutPaneBase {
       $order_type_storage = $this->entityTypeManager->getStorage('commerce_order_type');
       /** @var \Drupal\commerce_order\Entity\OrderTypeInterface $order_type */
       $order_type = $order_type_storage->load($this->order->bundle());
+
       $billing_profile = $this->entityTypeManager->getStorage('profile')->create([
         'uid' => $this->order->getCustomerId(),
         'type' => $order_type->getBillingProfileTypeId(),
