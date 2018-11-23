@@ -213,7 +213,8 @@ class CartProvider implements CartProviderInterface {
         ->condition('state', 'draft')
         ->condition('cart', TRUE)
         ->condition('uid', $account->id())
-        ->sort('order_id', 'DESC');
+        ->sort('order_id', 'DESC')
+        ->accessCheck(FALSE);
       $cart_ids = $query->execute();
     }
     else {
@@ -235,7 +236,7 @@ class CartProvider implements CartProviderInterface {
         // Skip locked carts, the customer is probably off-site for payment.
         continue;
       }
-      if ($cart->getCustomerId() != $uid || empty($cart->cart) || $cart->getState()->value != 'draft') {
+      if ($cart->getCustomerId() != $uid || empty($cart->cart) || $cart->getState()->getId() != 'draft') {
         // Skip carts that are no longer eligible.
         $non_eligible_cart_ids[] = $cart->id();
         continue;
