@@ -99,13 +99,14 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
     $form = $this->buildTraitForm($form, $form_state);
 
     $use_multiple_profile_types = $order_type->useMultipleProfileTypes();
+    $description = $use_multiple_profile_types
+      ? $this->t('Switching back to to use a single profile type is not possible.')
+      : '';
     $form['useMultipleProfileTypes'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Use multiple profile types for billing and shipping'),
       '#default_value' => $use_multiple_profile_types,
-      '#description' => $use_multiple_profile_types
-      ? $this->t('Switching back to use the single profile is not possible.')
-      : '',
+      '#description' => $description,
       '#disabled' => $use_multiple_profile_types,
     ];
 
@@ -199,7 +200,7 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
     $order_type = $this->entity;
 
     // Get the initial value of the useMultipleProfileTypes field.
-    $previous_use_multiple_profiles_value = $form['useMultipleProfileTypes']['#default_value'];
+    $previous_use_multiple_profiles_value = $order_type->useMultipleProfileTypes();
     $new_use_multiple_profiles_value = $form_state->getValue('useMultipleProfileTypes');
 
     // If the user has now selected to use multiple profile types, let's

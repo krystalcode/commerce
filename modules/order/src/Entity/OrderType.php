@@ -198,10 +198,10 @@ class OrderType extends CommerceBundleEntityBase implements OrderTypeInterface {
    */
   public function getBillingProfileTypeId() {
     if ($this->useMultipleProfileTypes()) {
-      return OrderType::PROFILE_BILLING;
+      return OrderTypeInterface::PROFILE_BILLING;
     }
 
-    return OrderType::PROFILE_COMMON;
+    return OrderTypeInterface::PROFILE_COMMON;
   }
 
   /**
@@ -209,10 +209,10 @@ class OrderType extends CommerceBundleEntityBase implements OrderTypeInterface {
    */
   public function getShippingProfileTypeId() {
     if ($this->useMultipleProfileTypes()) {
-      return OrderType::PROFILE_SHIPPING;
+      return OrderTypeInterface::PROFILE_SHIPPING;
     }
 
-    return OrderType::PROFILE_COMMON;
+    return OrderTypeInterface::PROFILE_COMMON;
   }
 
   /**

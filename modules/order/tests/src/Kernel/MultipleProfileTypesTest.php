@@ -2,11 +2,11 @@
 
 namespace Drupal\Tests\commerce_order\Kernel;
 
+use Drupal\commerce_order\Entity\OrderTypeInterface;
 use Drupal\commerce_product\Entity\ProductVariation;
 use Drupal\commerce_order\Entity\Order;
 use Drupal\commerce_order\Entity\OrderInterface;
 use Drupal\commerce_order\Entity\OrderItem;
-use Drupal\commerce_order\Entity\OrderType;
 use Drupal\commerce_order\Form\MultipleProfileTypesConfirmForm;
 use Drupal\commerce_price\Price;
 use Drupal\commerce_shipping\Entity\Shipment;
@@ -70,7 +70,7 @@ class MultipleProfileTypesTest extends ShippingKernelTestBase {
     $billing_profile = $order->getBillingProfile();
 
     // Assert that the billing profile type for this order is 'customer'.
-    $this->assertEquals(OrderType::PROFILE_COMMON, $billing_profile->bundle());
+    $this->assertEquals(OrderTypeInterface::PROFILE_COMMON, $billing_profile->bundle());
 
     // Assert the address is what we're expecting.
     $this->assertEquals(
@@ -84,7 +84,7 @@ class MultipleProfileTypesTest extends ShippingKernelTestBase {
       $shipping_profile = $shipment->getShippingProfile();
 
       // Assert that the shipping profile type for this order is 'customer'.
-      $this->assertEquals(OrderType::PROFILE_COMMON, $shipping_profile->bundle());
+      $this->assertEquals(OrderTypeInterface::PROFILE_COMMON, $shipping_profile->bundle());
 
       // Assert the address is what we're expecting.
       $this->assertEquals(
@@ -110,26 +110,26 @@ class MultipleProfileTypesTest extends ShippingKernelTestBase {
     /** @var \Drupal\profile\Entity\ProfileTypeInterface $profile_type */
     $profile_type = \Drupal::service('entity_type.manager')
       ->getStorage('profile_type')
-      ->load(OrderType::PROFILE_BILLING);
+      ->load(OrderTypeInterface::PROFILE_BILLING);
     $this->assertNotNull($profile_type);
-    $this->assertEquals(OrderType::PROFILE_BILLING, $profile_type->id());
+    $this->assertEquals(OrderTypeInterface::PROFILE_BILLING, $profile_type->id());
     $this->assertEquals(t('Customer Billing'), $profile_type->label());
     // Assert that the address field exists.
     $field_definitions = \Drupal::service('entity_field.manager')
-      ->getFieldDefinitions('profile', OrderType::PROFILE_BILLING);
+      ->getFieldDefinitions('profile', OrderTypeInterface::PROFILE_BILLING);
     $this->assertNotNull($field_definitions['address']);
 
     // Assert that we have a customer_shipping profile type.
     /** @var \Drupal\profile\Entity\ProfileTypeInterface $profile_type */
     $profile_type = \Drupal::service('entity_type.manager')
       ->getStorage('profile_type')
-      ->load(OrderType::PROFILE_SHIPPING);
+      ->load(OrderTypeInterface::PROFILE_SHIPPING);
     $this->assertNotNull($profile_type);
-    $this->assertEquals(OrderType::PROFILE_SHIPPING, $profile_type->id());
+    $this->assertEquals(OrderTypeInterface::PROFILE_SHIPPING, $profile_type->id());
     $this->assertEquals(t('Customer Shipping'), $profile_type->label());
     // Assert that the address field exists.
     $field_definitions = \Drupal::service('entity_field.manager')
-      ->getFieldDefinitions('profile', OrderType::PROFILE_SHIPPING);
+      ->getFieldDefinitions('profile', OrderTypeInterface::PROFILE_SHIPPING);
     $this->assertNotNull($field_definitions['address']);
   }
 
@@ -167,7 +167,7 @@ class MultipleProfileTypesTest extends ShippingKernelTestBase {
 
     // Assert that the billing profile type for this order is
     // 'customer_billing'.
-    $this->assertEquals(OrderType::PROFILE_BILLING, $billing_profile->bundle());
+    $this->assertEquals(OrderTypeInterface::PROFILE_BILLING, $billing_profile->bundle());
 
     // Assert the address is what we're expecting.
     $this->assertEquals(
@@ -182,7 +182,7 @@ class MultipleProfileTypesTest extends ShippingKernelTestBase {
 
       // Assert that the shipping profile type for this order is
       // 'customer_shipping'.
-      $this->assertEquals(OrderType::PROFILE_SHIPPING, $shipping_profile->bundle());
+      $this->assertEquals(OrderTypeInterface::PROFILE_SHIPPING, $shipping_profile->bundle());
 
       // Assert the address is what we're expecting.
       $this->assertEquals(

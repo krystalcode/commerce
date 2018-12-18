@@ -4,6 +4,7 @@ namespace Drupal\Tests\commerce_order\Kernel;
 
 use Drupal\commerce_order\Entity\Order;
 use Drupal\commerce_order\Entity\OrderType;
+use Drupal\commerce_order\Entity\OrderTypeInterface;
 use Drupal\commerce_price\Price;
 use Drupal\commerce_product\Entity\Product;
 use Drupal\commerce_product\Entity\ProductVariation;
@@ -77,7 +78,7 @@ class OrderReceiptTest extends CommerceKernelTestBase {
     $product->addVariation($variation1)->save();
 
     $profile = Profile::create([
-      'type' => OrderType::PROFILE_COMMON,
+      'type' => OrderTypeInterface::PROFILE_COMMON,
     ]);
     $profile->save();
     $profile = $this->reloadEntity($profile);

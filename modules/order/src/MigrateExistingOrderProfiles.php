@@ -3,7 +3,6 @@
 namespace Drupal\commerce_order;
 
 use Drupal\commerce_order\Entity\OrderInterface;
-use Drupal\commerce_order\Entity\OrderType;
 use Drupal\commerce_order\Entity\OrderTypeInterface;
 use Drupal\profile\Entity\ProfileInterface;
 
@@ -102,7 +101,7 @@ class MigrateExistingOrderProfiles {
     if ($billing_profile) {
       // Change the billing profile from the customer profile type to the
       // customer_billing profile type.
-      $billing_profile->set('type', OrderType::PROFILE_BILLING);
+      $billing_profile->set('type', OrderTypeInterface::PROFILE_BILLING);
       $billing_profile->save();
     }
 
@@ -131,7 +130,7 @@ class MigrateExistingOrderProfiles {
       if ($shipping_profile->id() != $billing_profile->id()) {
         // Change the shipping profile from the customer profile type to the
         // customer_shipping profile type.
-        $shipping_profile->set('type', OrderType::PROFILE_SHIPPING);
+        $shipping_profile->set('type', OrderTypeInterface::PROFILE_SHIPPING);
         $shipping_profile->save();
       }
       // Else, if the shipment references the same billing profile, create
@@ -142,7 +141,7 @@ class MigrateExistingOrderProfiles {
 
         // Change the shipping profile from the customer profile type to the
         // customer_shipping profile type.
-        $new_shipping_profile->set('type', OrderType::PROFILE_SHIPPING);
+        $new_shipping_profile->set('type', OrderTypeInterface::PROFILE_SHIPPING);
         $new_shipping_profile->save();
 
         // Change the shipment reference to our newly created shipping profile.

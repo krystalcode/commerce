@@ -5,7 +5,7 @@ namespace Drupal\Tests\commerce_promotion\FunctionalJavascript;
 use Drupal\commerce_checkout\Entity\CheckoutFlow;
 use Drupal\commerce_order\Entity\OrderItem;
 use Drupal\commerce_order\Entity\OrderItemType;
-use Drupal\commerce_order\Entity\OrderType;
+use Drupal\commerce_order\Entity\OrderTypeInterface;
 use Drupal\commerce_payment\Entity\PaymentGateway;
 use Drupal\commerce_price\Price;
 use Drupal\Core\Url;
@@ -125,7 +125,7 @@ class CouponRedemptionPaneTest extends CommerceWebDriverTestBase {
     $onsite_gateway->save();
 
     $profile = $this->createEntity('profile', [
-      'type' => OrderType::PROFILE_COMMON,
+      'type' => OrderTypeInterface::PROFILE_COMMON,
       'address' => [
         'country_code' => 'US',
         'postal_code' => '53177',

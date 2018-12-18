@@ -7,6 +7,7 @@ use Drupal\commerce_order\Entity\Order;
 use Drupal\commerce_order\Entity\OrderItem;
 use Drupal\commerce_order\Entity\OrderItemType;
 use Drupal\commerce_order\Entity\OrderType;
+use Drupal\commerce_order\Entity\OrderTypeInterface;
 use Drupal\commerce_price\Exception\CurrencyMismatchException;
 use Drupal\commerce_price\Price;
 use Drupal\profile\Entity\Profile;
@@ -120,7 +121,7 @@ class OrderTest extends CommerceKernelTestBase {
    */
   public function testOrder() {
     $profile = Profile::create([
-      'type' => OrderType::PROFILE_COMMON,
+      'type' => OrderTypeInterface::PROFILE_COMMON,
     ]);
     $profile->save();
     $profile = $this->reloadEntity($profile);

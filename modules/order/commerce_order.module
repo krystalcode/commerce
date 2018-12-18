@@ -6,7 +6,6 @@
  */
 
 use Drupal\commerce_order\Entity\OrderTypeInterface;
-use Drupal\commerce_order\Entity\OrderType;
 use Drupal\commerce_order\Plugin\Field\FieldFormatter\PriceCalculatedFormatter;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
@@ -270,9 +269,9 @@ function commerce_order_form_profile_type_edit_form_alter(&$form, FormStateInter
   /** @var \Drupal\profile\Entity\ProfileTypeInterface $entity */
   $entity = $form_state->getFormObject()->getEntity();
   $supported_profile_types = [
-    OrderType::PROFILE_COMMON,
-    OrderType::PROFILE_BILLING,
-    OrderType::PROFILE_SHIPPING,
+    OrderTypeInterface::PROFILE_COMMON,
+    OrderTypeInterface::PROFILE_BILLING,
+    OrderTypeInterface::PROFILE_SHIPPING,
   ];
 
   if (!in_array($entity->id(), $supported_profile_types)) {

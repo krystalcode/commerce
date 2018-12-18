@@ -5,6 +5,7 @@ namespace Drupal\Tests\commerce_order\FunctionalJavascript;
 use Drupal\commerce_order\Entity\Order;
 use Drupal\commerce_order\Entity\OrderInterface;
 use Drupal\commerce_order\Entity\OrderType;
+use Drupal\commerce_order\Entity\OrderTypeInterface;
 use Drupal\commerce_payment\Entity\PaymentGateway;
 use Drupal\commerce_product\Entity\ProductVariationType;
 use Drupal\Tests\commerce\Functional\CommerceBrowserTestBase;
@@ -245,7 +246,7 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
     $web_assert->elementTextContains(
       'css',
       'body > div > div > main > div > div > table > tbody > tr.odd > td.priority-medium',
-      OrderType::PROFILE_COMMON
+      OrderTypeInterface::PROFILE_COMMON
     );
     // Assert the profile ID.
     $web_assert->elementAttributeContains(
@@ -258,7 +259,7 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
     $web_assert->elementTextContains(
       'css',
       'body > div > div > main > div > div > table > tbody > tr.even > td.priority-medium',
-      OrderType::PROFILE_COMMON
+      OrderTypeInterface::PROFILE_COMMON
     );
     // Assert the profile ID.
     $web_assert->elementAttributeContains(
@@ -282,14 +283,14 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
     /** @var \Drupal\profile\Entity\ProfileTypeInterface $profile_type */
     $profile_type = \Drupal::service('entity_type.manager')
       ->getStorage('profile_type')
-      ->load(OrderType::PROFILE_BILLING);
+      ->load(OrderTypeInterface::PROFILE_BILLING);
     $this->assertNotNull($profile_type);
 
     // Assert that we have a customer_shipping profile type.
     /** @var \Drupal\profile\Entity\ProfileTypeInterface $profile_type */
     $profile_type = \Drupal::service('entity_type.manager')
       ->getStorage('profile_type')
-      ->load(OrderType::PROFILE_SHIPPING);
+      ->load(OrderTypeInterface::PROFILE_SHIPPING);
     $this->assertNotNull($profile_type);
 
     // Now, let's test that the order profiles has been changed for existing
@@ -305,7 +306,7 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
 
     // Assert that the billing profile type for this order is
     // 'customer_billing'.
-    $this->assertEquals(OrderType::PROFILE_BILLING, $billing_profile->bundle());
+    $this->assertEquals(OrderTypeInterface::PROFILE_BILLING, $billing_profile->bundle());
 
     // Assert the address is what we're expecting.
     $this->assertEquals(
@@ -320,7 +321,7 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
 
       // Assert that the shipping profile type for this order is
       // 'customer_shipping'.
-      $this->assertEquals(OrderType::PROFILE_SHIPPING, $shipping_profile->bundle());
+      $this->assertEquals(OrderTypeInterface::PROFILE_SHIPPING, $shipping_profile->bundle());
 
       // Assert the address is what we're expecting.
       $this->assertEquals(
@@ -339,7 +340,7 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
     $web_assert->elementTextContains(
       'css',
       'body > div > div > main > div > div > table > tbody > tr.odd > td.priority-medium',
-      OrderType::PROFILE_SHIPPING
+      OrderTypeInterface::PROFILE_SHIPPING
     );
     // Assert the profile ID, to ensure it hasn't changed.
     $web_assert->elementAttributeContains(
@@ -353,7 +354,7 @@ class MultipleProfileTypesFormTest extends CommerceBrowserTestBase {
     $web_assert->elementTextContains(
       'css',
       'body > div > div > main > div > div > table > tbody > tr.even > td.priority-medium',
-      OrderType::PROFILE_BILLING
+      OrderTypeInterface::PROFILE_BILLING
     );
     // Assert the profile ID.
     $web_assert->elementAttributeContains(

@@ -2,7 +2,7 @@
 
 namespace Drupal\commerce_order\EventSubscriber;
 
-use Drupal\commerce_order\Entity\OrderType;
+use Drupal\commerce_order\Entity\OrderTypeInterface;
 use Drupal\profile\Event\ProfileLabelEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
@@ -29,9 +29,9 @@ class ProfileLabelSubscriber implements EventSubscriberInterface {
     $profile = $event->getProfile();
 
     $supported_profile_types = [
-      OrderType::PROFILE_COMMON,
-      OrderType::PROFILE_BILLING,
-      OrderType::PROFILE_SHIPPING,
+      OrderTypeInterface::PROFILE_COMMON,
+      OrderTypeInterface::PROFILE_BILLING,
+      OrderTypeInterface::PROFILE_SHIPPING,
     ];
 
     if (!in_array($profile->bundle(), $supported_profile_types)) {

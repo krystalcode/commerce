@@ -2,7 +2,7 @@
 
 namespace Drupal\commerce_order\Form;
 
-use Drupal\commerce_order\Entity\OrderType;
+use Drupal\commerce_order\Entity\OrderTypeInterface;
 use Drupal\profile\Entity\ProfileTypeInterface;
 
 use Drupal\Core\Entity\EntityFieldManager;
@@ -180,20 +180,20 @@ class MultipleProfileTypesConfirmForm extends ConfirmFormBase {
    */
   public function createProfileTypes() {
     $profile_types = [
-      OrderType::PROFILE_BILLING => $this->t('Customer Billing'),
-      OrderType::PROFILE_SHIPPING => $this->t('Customer Shipping'),
+      OrderTypeInterface::PROFILE_BILLING => $this->t('Customer Billing'),
+      OrderTypeInterface::PROFILE_SHIPPING => $this->t('Customer Shipping'),
     ];
 
     // Load the 'customer' profile type so we can just duplicate that for the
     // new billing and shipping profile types.
     $profile_type_storage = $this->entityTypeManager->getStorage('profile_type');
     /** @var \Drupal\commerce_order\Entity\OrderType $order_type */
-    $customer_profile_type = $profile_type_storage->load(OrderType::PROFILE_COMMON);
+    $customer_profile_type = $profile_type_storage->load(OrderTypeInterface::PROFILE_COMMON);
 
     // Fetch the non-base fields from the 'customer' profile type so we can copy
     // the same to the new profile types.
     $extra_fields_to_add = [];
-    $field_definitions = $this->entityFieldManager->getFieldDefinitions('profile', OrderType::PROFILE_COMMON);
+    $field_definitions = $this->entityFieldManager->getFieldDefinitions('profile', OrderTypeInterface::PROFILE_COMMON);
     foreach ($field_definitions as $field_name => $field_definition) {
       if ($field_definition->getFieldStorageDefinition()->isBaseField()) {
         continue;
@@ -269,7 +269,7 @@ class MultipleProfileTypesConfirmForm extends ConfirmFormBase {
         ->loadByProperties(
           [
             'targetEntityType' => $entity_type,
-            'bundle' => OrderType::PROFILE_COMMON,
+            'bundle' => OrderTypeInterface::PROFILE_COMMON,
           ]
         );
 
