@@ -103,14 +103,13 @@ class CouponRedemptionElementTest extends CommerceWebDriverTestBase {
   /**
    * Tests redeeming a single coupon.
    *
-   * @see commerce_promotion_test_form_views_form_commerce_cart_form_default_alter
+   * @see commerce_promotion_test_form_views_form_commerce_cart_form_default_alter()
    */
   public function testSingleCouponRedemption() {
     $coupons = $this->promotion->getCoupons();
     $coupon = reset($coupons);
 
     $this->drupalGet(Url::fromRoute('commerce_cart.page', [], ['query' => ['coupon_cardinality' => 1]]));
-    $this->assertSession()->pageTextContains('Enter your coupon code to redeem a promotion.');
     // Empty coupon.
     $this->getSession()->getPage()->pressButton('Apply coupon');
     $this->waitForAjaxToFinish();
@@ -141,7 +140,7 @@ class CouponRedemptionElementTest extends CommerceWebDriverTestBase {
   /**
    * Tests redeeming coupon on the cart form, with multiple coupons allowed.
    *
-   * @see commerce_promotion_test_form_views_form_commerce_cart_form_default_alter
+   * @see commerce_promotion_test_form_views_form_commerce_cart_form_default_alter()
    */
   public function testMultipleCouponRedemption() {
     $coupons = $this->promotion->getCoupons();
@@ -162,7 +161,8 @@ class CouponRedemptionElementTest extends CommerceWebDriverTestBase {
     $this->getSession()->getPage()->fillField('Coupon code', $first_coupon->getCode());
     $this->getSession()->getPage()->pressButton('Apply coupon');
     $this->waitForAjaxToFinish();
-    $this->assertSession()->pageTextContains('The provided coupon code is invalid');
+    $this->assertSession()->pageTextNotContains('The provided coupon code is invalid');
+    $this->assertSession()->pageTextContains($first_coupon->getCode());
 
     // Second coupon.
     $this->getSession()->getPage()->fillField('Coupon code', $second_coupon->getCode());
