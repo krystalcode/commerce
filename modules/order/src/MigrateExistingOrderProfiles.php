@@ -73,7 +73,7 @@ class MigrateExistingOrderProfiles {
     else {
       $error_operation = reset($operations);
       $message = \Drupal::translation()->translate(
-        'An error occurred while processing @operation with arguments: 
+        'An error occurred while processing @operation with arguments:
           @args for the following order IDs: @order_ids.',
         [
           '@operation' => $error_operation[0],

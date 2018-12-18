@@ -144,7 +144,7 @@ class MultipleProfileTypesConfirmForm extends ConfirmFormBase {
 
     $this->messenger()->addWarning($this->t('
       If you choose to proceed, profiles for existing orders will be migrated to
-      use separate profile types. That can take some time and it might cause 
+      use separate profile types. That can take some time and it might cause
       errors if the users try to view their existing orders during the process;
       if you are running this on a production site please make sure that you are
       in maintenance mode.'
