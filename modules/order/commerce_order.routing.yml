@@ -45,3 +45,15 @@ entity.commerce_order.user_view:
       entity:
         user: 'entity:user'
         commerce_order: 'entity:order'
+
+entity.commerce_order_type.multiple_profile_types_form:
+  path: '/admin/commerce/config/order-types/{commerce_order_type}/multiple-profile-types'
+  defaults:
+    _form: '\Drupal\commerce_order\Form\MultipleProfileTypesConfirmForm'
+    _title: 'Multiple Profile Types Confirm Form'
+  options:
+    parameters:
+      commerce_order_type:
+        type: 'entity:commerce_order_type'
+  requirements:
+    _permission: 'administer commerce_order_type'

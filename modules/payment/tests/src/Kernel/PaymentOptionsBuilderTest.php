@@ -5,6 +5,7 @@ namespace Drupal\Tests\commerce_payment\Kernel;
 use Drupal\commerce_order\Entity\Order;
 use Drupal\commerce_order\Entity\OrderItem;
 use Drupal\commerce_order\Entity\OrderItemType;
+use Drupal\commerce_order\Entity\OrderTypeInterface;
 use Drupal\commerce_payment\Entity\PaymentGateway;
 use Drupal\commerce_payment\Entity\PaymentMethod;
 use Drupal\commerce_price\Price;
@@ -140,7 +141,7 @@ class PaymentOptionsBuilderTest extends CommerceKernelTestBase {
     $payment_gateway->save();
 
     $profile = Profile::create([
-      'type' => 'customer',
+      'type' => OrderTypeInterface::PROFILE_COMMON,
       'address' => [
         'country_code' => 'US',
         'postal_code' => '53177',

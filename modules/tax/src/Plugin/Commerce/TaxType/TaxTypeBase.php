@@ -4,6 +4,7 @@ namespace Drupal\commerce_tax\Plugin\Commerce\TaxType;
 
 use Drupal\commerce_order\Entity\OrderInterface;
 use Drupal\commerce_order\Entity\OrderItemInterface;
+use Drupal\commerce_order\Entity\OrderType;
 use Drupal\commerce_store\Entity\StoreInterface;
 use Drupal\commerce_tax\Event\TaxEvents;
 use Drupal\commerce_tax\Event\CustomerProfileEvent;
@@ -230,7 +231,7 @@ abstract class TaxTypeBase extends PluginBase implements TaxTypeInterface, Conta
     if (!$customer_profile && $this->isDisplayInclusive()) {
       // The customer is still unknown, but prices are displayed tax-inclusive
       // (VAT scenario), better to show the store's default tax than nothing.
-      $customer_profile = $this->buildStoreProfile($order->getStore());
+      $customer_profile = $this->buildStoreProfile($order);
     }
 
     return $customer_profile;
@@ -239,18 +240,25 @@ abstract class TaxTypeBase extends PluginBase implements TaxTypeInterface, Conta
   /**
    * Builds a customer profile for the given store.
    *
-   * @param \Drupal\commerce_store\Entity\StoreInterface $store
-   *   The store.
+   * @param \Drupal\commerce_order\Entity\OrderInterface $order
+   *   The order.
    *
    * @return \Drupal\profile\Entity\ProfileInterface
    *   The customer profile.
    */
-  protected function buildStoreProfile(StoreInterface $store) {
+  protected function buildStoreProfile(OrderInterface $order) {
+    $store = $order->getStore();
     $store_id = $store->id();
     if (!isset($this->storeProfiles[$store_id])) {
+      $order_type_storage = $this
+        ->entityTypeManager
+        ->getStorage('commerce_order_type');
+      /** @var \Drupal\commerce_order\Entity\OrderTypeInterface $order_type */
+      $order_type = $order_type_storage->load($order->bundle());
       $profile_storage = $this->entityTypeManager->getStorage('profile');
+
       $this->storeProfiles[$store_id] = $profile_storage->create([
-        'type' => 'customer',
+        'type' => $order_type->getBillingProfileTypeId(),
         'uid' => $store->getOwnerId(),
         'address' => $store->getAddress(),
       ]);

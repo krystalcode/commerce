@@ -4,6 +4,7 @@ namespace Drupal\commerce_tax;
 
 use Drupal\commerce_order\Entity\OrderInterface;
 use Drupal\commerce_order\Entity\OrderItemInterface;
+use Drupal\commerce_order\Entity\OrderType;
 use Drupal\commerce_order\OrderProcessorInterface;
 use Drupal\commerce_price\RounderInterface;
 use Drupal\commerce_store\Entity\StoreInterface;
@@ -124,7 +125,7 @@ class TaxOrderProcessor implements OrderProcessorInterface {
    *   The tax rates, keyed by tax zone ID.
    */
   protected function getDefaultRates(OrderItemInterface $order_item, StoreInterface $store) {
-    $store_profile = $this->buildStoreProfile($store);
+    $store_profile = $this->buildStoreProfile($order_item->getOrder());
     $rates = [];
     foreach ($this->getStoreZones($store) as $zone) {
       $rate = $this->chainRateResolver->resolve($zone, $order_item, $store_profile);
@@ -177,18 +178,25 @@ class TaxOrderProcessor implements OrderProcessorInterface {
   /**
    * Builds a customer profile for the given store.
    *
-   * @param \Drupal\commerce_store\Entity\StoreInterface $store
-   *   The store.
+   * @param \Drupal\commerce_order\Entity\OrderInterface $order
+   *   The order.
    *
    * @return \Drupal\profile\Entity\ProfileInterface
    *   The customer profile.
    */
-  protected function buildStoreProfile(StoreInterface $store) {
+  protected function buildStoreProfile(OrderInterface $order) {
+    $store = $order->getStore();
     $store_id = $store->id();
     if (!isset($this->storeProfiles[$store_id])) {
+      $order_type_storage = $this
+        ->entityTypeManager
+        ->getStorage('commerce_order_type');
+      /** @var \Drupal\commerce_order\Entity\OrderTypeInterface $order_type */
+      $order_type = $order_type_storage->load($order->bundle());
       $profile_storage = $this->entityTypeManager->getStorage('profile');
+
       $this->storeProfiles[$store_id] = $profile_storage->create([
-        'type' => 'customer',
+        'type' => $order_type->getBillingProfileTypeId(),
         'uid' => $store->getOwnerId(),
         'address' => $store->getAddress(),
       ]);

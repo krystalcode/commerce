@@ -13,6 +13,11 @@ interface OrderTypeInterface extends CommerceBundleEntityInterface {
   const REFRESH_ALWAYS = 'always';
   const REFRESH_CUSTOMER = 'customer';
 
+  // Commerce order profile types.
+  const PROFILE_COMMON = 'customer';
+  const PROFILE_BILLING = 'customer_billing';
+  const PROFILE_SHIPPING = 'customer_shipping';
+
   /**
    * Gets the order type's workflow ID.
    *
@@ -32,6 +37,44 @@ interface OrderTypeInterface extends CommerceBundleEntityInterface {
    * @return $this
    */
   public function setWorkflowId($workflow_id);
+
+  /**
+   * Whether we should use a multiple profile types for shipping and billing.
+   *
+   * @return bool
+   *   TRUE if we should use multiple profile types for this order type.
+   */
+  public function useMultipleProfileTypes();
+
+  /**
+   * Sets whether we should use multiple profile types for shipping and billing.
+   *
+   * @param bool $use_multiple_profile_types
+   *   Boolean indicating if we should use multiple profile types.
+   *
+   * @return $this
+   */
+  public function setUseMultipleProfileTypes($use_multiple_profile_types);
+
+  /**
+   * Gets the order type's billing profile ID.
+   *
+   * Dependent on the useMultipleProfileTypes field on the order_type.
+   *
+   * @return string
+   *   The order type's billing profile type ID.
+   */
+  public function getBillingProfileTypeId();
+
+  /**
+   * Gets the order type's shipping profile ID.
+   *
+   * Dependent on the useMultipleProfileTypes field on the order_type.
+   *
+   * @return string
+   *   The order type's shipping profile type ID.
+   */
+  public function getShippingProfileTypeId();
 
   /**
    * Gets the order type's refresh mode.

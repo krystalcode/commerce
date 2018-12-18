@@ -5,6 +5,8 @@ namespace Drupal\Tests\commerce_tax\Kernel;
 use Drupal\commerce_order\Entity\Order;
 use Drupal\commerce_order\Entity\OrderItem;
 use Drupal\commerce_order\Entity\OrderItemType;
+use Drupal\commerce_order\Entity\OrderType;
+use Drupal\commerce_order\Entity\OrderTypeInterface;
 use Drupal\commerce_price\Price;
 use Drupal\commerce_tax\Entity\TaxType;
 use Drupal\profile\Entity\Profile;
@@ -115,7 +117,7 @@ class OrderIntegrationTest extends CommerceKernelTestBase {
    */
   public function testBillingProfile() {
     $profile = Profile::create([
-      'type' => 'customer',
+      'type' => OrderTypeInterface::PROFILE_COMMON,
       'address' => [
         'country_code' => 'US',
         'administrative_area' => 'SC',
@@ -143,7 +145,7 @@ class OrderIntegrationTest extends CommerceKernelTestBase {
    */
   public function testTaxExemptPrices() {
     $profile = Profile::create([
-      'type' => 'customer',
+      'type' => OrderTypeInterface::PROFILE_COMMON,
       'address' => [
         'country_code' => 'RS',
       ],

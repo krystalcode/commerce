@@ -90,8 +90,12 @@ class BillingProfileWidget extends WidgetBase implements ContainerFactoryPluginI
       $profile = $items[$delta]->entity;
     }
     else {
+      $order_type_storage = $this->entityTypeManager->getStorage('commerce_order_type');
+      /** @var \Drupal\commerce_order\Entity\OrderTypeInterface $order_type */
+      $order_type = $order_type_storage->load($order->bundle());
+
       $profile = $this->entityTypeManager->getStorage('profile')->create([
-        'type' => 'customer',
+        'type' => $order_type->getBillingProfileTypeId(),
         'uid' => $order->getCustomer(),
       ]);
     }

@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\commerce_order\Kernel;
 
+use Drupal\commerce_order\Entity\OrderTypeInterface;
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\commerce_order\Entity\Order;
 use Drupal\commerce_order\Entity\OrderType;
@@ -124,7 +125,7 @@ class OrderRefreshTest extends CommerceKernelTestBase {
     $this->variation2 = $this->reloadEntity($variation2);
 
     $profile = Profile::create([
-      'type' => 'customer',
+      'type' => OrderTypeInterface::PROFILE_COMMON,
     ]);
     $profile->save();
     $profile = $this->reloadEntity($profile);

@@ -5,6 +5,7 @@ namespace Drupal\Tests\commerce_order\Functional;
 use Drupal\commerce_order\Adjustment;
 use Drupal\commerce_order\Entity\Order;
 use Drupal\commerce_order\Entity\OrderItem;
+use Drupal\commerce_order\Entity\OrderTypeInterface;
 use Drupal\commerce_price\Price;
 use Drupal\profile\Entity\Profile;
 
@@ -30,7 +31,7 @@ class OrderAdminTest extends OrderBrowserTestBase {
     \Drupal::service('module_installer')->install(['profile']);
 
     $profile_values = [
-      'type' => 'customer',
+      'type' => OrderTypeInterface::PROFILE_COMMON,
       'uid' => 1,
       'status' => 1,
     ];
@@ -167,7 +168,7 @@ class OrderAdminTest extends OrderBrowserTestBase {
     $customer = $this->drupalCreateUser();
     // The profile is not associated with the customer to avoid #2995300.
     $profile = Profile::create([
-      'type' => 'customer',
+      'type' => OrderTypeInterface::PROFILE_COMMON,
       'address' => [
         'country_code' => 'US',
         'postal_code' => '53177',

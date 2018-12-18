@@ -82,9 +82,15 @@ class BillingInformation extends CheckoutPaneBase implements CheckoutPaneInterfa
     $store = $this->order->getStore();
     $profile = $this->order->getBillingProfile();
     if (!$profile) {
+      $order_type_storage = $this
+        ->entityTypeManager
+        ->getStorage('commerce_order_type');
+      /** @var \Drupal\commerce_order\Entity\OrderTypeInterface $order_type */
+      $order_type = $order_type_storage->load($this->order->bundle());
       $profile_storage = $this->entityTypeManager->getStorage('profile');
+
       $profile = $profile_storage->create([
-        'type' => 'customer',
+        'type' => $order_type->getBillingProfileTypeId(),
         'uid' => $this->order->getCustomerId(),
       ]);
     }

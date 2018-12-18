@@ -41,6 +41,7 @@ use Drupal\commerce\Entity\CommerceBundleEntityBase;
  *     "label",
  *     "id",
  *     "workflow",
+ *     "useMultipleProfileTypes",
  *     "refresh_mode",
  *     "refresh_frequency",
  *     "sendReceipt",
@@ -52,6 +53,7 @@ use Drupal\commerce\Entity\CommerceBundleEntityBase;
  *     "add-form" = "/admin/commerce/config/order-types/add",
  *     "edit-form" = "/admin/commerce/config/order-types/{commerce_order_type}/edit",
  *     "delete-form" = "/admin/commerce/config/order-types/{commerce_order_type}/delete",
+ *     "multiple-profile-types-form" = "/admin/commerce/config/order-types/{commerce_order_type}/multiple-profile-types",
  *     "collection" = "/admin/commerce/config/order-types"
  *   }
  * )
@@ -64,6 +66,13 @@ class OrderType extends CommerceBundleEntityBase implements OrderTypeInterface {
    * @var string
    */
   protected $workflow;
+
+  /**
+   * Boolean indicating whether to use multiple profile types for order type.
+   *
+   * @var bool
+   */
+  protected $useMultipleProfileTypes;
 
   /**
    * The order type refresh mode.
@@ -105,6 +114,21 @@ class OrderType extends CommerceBundleEntityBase implements OrderTypeInterface {
    */
   public function setWorkflowId($workflow_id) {
     $this->workflow = $workflow_id;
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function useMultipleProfileTypes() {
+    return $this->useMultipleProfileTypes;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUseMultipleProfileTypes($use_multiple_profile_types) {
+    $this->useMultipleProfileTypes = $use_multiple_profile_types;
     return $this;
   }
 
@@ -167,6 +191,28 @@ class OrderType extends CommerceBundleEntityBase implements OrderTypeInterface {
   public function setReceiptBcc($receipt_bcc) {
     $this->receiptBcc = $receipt_bcc;
     return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getBillingProfileTypeId() {
+    if ($this->useMultipleProfileTypes()) {
+      return OrderTypeInterface::PROFILE_BILLING;
+    }
+
+    return OrderTypeInterface::PROFILE_COMMON;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getShippingProfileTypeId() {
+    if ($this->useMultipleProfileTypes()) {
+      return OrderTypeInterface::PROFILE_SHIPPING;
+    }
+
+    return OrderTypeInterface::PROFILE_COMMON;
   }
 
   /**

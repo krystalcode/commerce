@@ -9,6 +9,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\state_machine\WorkflowManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Provides an order type form.
@@ -23,17 +24,31 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
   protected $workflowManager;
 
   /**
+   * The current request.
+   *
+   * @var \Symfony\Component\HttpFoundation\Request
+   */
+  protected $request;
+
+  /**
    * Constructs a new OrderTypeForm object.
    *
    * @param \Drupal\commerce\EntityTraitManagerInterface $trait_manager
    *   The entity trait manager.
    * @param \Drupal\state_machine\WorkflowManagerInterface $workflow_manager
    *   The workflow manager.
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The current request.
    */
-  public function __construct(EntityTraitManagerInterface $trait_manager, WorkflowManagerInterface $workflow_manager) {
+  public function __construct(
+    EntityTraitManagerInterface $trait_manager,
+    WorkflowManagerInterface $workflow_manager,
+    Request $request
+  ) {
     parent::__construct($trait_manager);
 
     $this->workflowManager = $workflow_manager;
+    $this->request = $request;
   }
 
   /**
@@ -42,7 +57,8 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('plugin.manager.commerce_entity_trait'),
-      $container->get('plugin.manager.workflow')
+      $container->get('plugin.manager.workflow'),
+      $container->get('request_stack')->getCurrentRequest()
     );
   }
 
@@ -81,6 +97,18 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
       '#description' => $this->t('Used by all orders of this type.'),
     ];
     $form = $this->buildTraitForm($form, $form_state);
+
+    $use_multiple_profile_types = $order_type->useMultipleProfileTypes();
+    $description = $use_multiple_profile_types
+      ? $this->t('Switching back to to use a single profile type is not possible.')
+      : '';
+    $form['useMultipleProfileTypes'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Use multiple profile types for billing and shipping'),
+      '#default_value' => $use_multiple_profile_types,
+      '#description' => $description,
+      '#disabled' => $use_multiple_profile_types,
+    ];
 
     $form['refresh'] = [
       '#type' => 'details',
@@ -168,15 +196,46 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
-    $status = $this->entity->save();
+    /** @var \Drupal\commerce_order\Entity\OrderTypeInterface $order_type */
+    $order_type = $this->entity;
+
+    // Get the initial value of the useMultipleProfileTypes field.
+    $previous_use_multiple_profiles_value = $form['useMultipleProfileTypes']['#default_value'];
+    $new_use_multiple_profiles_value = $form_state->getValue('useMultipleProfileTypes');
+
+    // If the user has now selected to use multiple profile types, let's
+    // redirect them to the confirm page because this is a significant change.
+    if ($new_use_multiple_profiles_value == TRUE
+      && $previous_use_multiple_profiles_value != $new_use_multiple_profiles_value) {
+      // Let's just set the useMultipleProfileTypes field to FALSE for now, in
+      // case, the user cancels out of switching to multi profiles. We'll turn
+      // it to FALSE, once the user has confirmed and we've processed everything
+      // in the confirm submit.
+      $order_type->setUseMultipleProfileTypes(FALSE);
+
+      // Remove the destination as we want to go to the confirm page.
+      $this->request->query->remove('destination');
+
+      $form_state->setRedirect(('entity.commerce_order_type.multiple_profile_types_form'), [
+        'commerce_order_type' => $order_type->id(),
+      ]);
+    }
+    else {
+      $form_state->setRedirect('entity.commerce_order_type.collection');
+    }
+
+    $status = $order_type->save();
     $this->submitTraitForm($form, $form_state);
 
-    $this->messenger()->addMessage($this->t('Saved the %label order type.', ['%label' => $this->entity->label()]));
-    $form_state->setRedirect('entity.commerce_order_type.collection');
-
     if ($status == SAVED_NEW) {
-      commerce_order_add_order_items_field($this->entity);
+      commerce_order_add_order_items_field($order_type);
     }
+
+    $this->messenger()->addMessage($this->t(
+      'Saved the %label order type.', [
+        '%label' => $order_type->label()
+      ]
+    ));
   }
 
 }

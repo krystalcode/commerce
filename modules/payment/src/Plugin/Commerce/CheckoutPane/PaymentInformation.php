@@ -273,9 +273,13 @@ class PaymentInformation extends CheckoutPaneBase {
     $store = $this->order->getStore();
     $billing_profile = $this->order->getBillingProfile();
     if (!$billing_profile) {
+      $order_type_storage = $this->entityTypeManager->getStorage('commerce_order_type');
+      /** @var \Drupal\commerce_order\Entity\OrderTypeInterface $order_type */
+      $order_type = $order_type_storage->load($this->order->bundle());
+
       $billing_profile = $this->entityTypeManager->getStorage('profile')->create([
         'uid' => $this->order->getCustomerId(),
-        'type' => 'customer',
+        'type' => $order_type->getBillingProfileTypeId(),
       ]);
     }
     $inline_form = $this->inlineFormManager->createInstance('customer_profile', [
