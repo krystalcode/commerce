@@ -200,7 +200,7 @@ class OrderTypeForm extends CommerceBundleEntityFormBase {
     $order_type = $this->entity;
 
     // Get the initial value of the useMultipleProfileTypes field.
-    $previous_use_multiple_profiles_value = $order_type->useMultipleProfileTypes();
+    $previous_use_multiple_profiles_value = $form['useMultipleProfileTypes']['#default_value'];
     $new_use_multiple_profiles_value = $form_state->getValue('useMultipleProfileTypes');
 
     // If the user has now selected to use multiple profile types, let's
