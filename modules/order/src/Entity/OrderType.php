@@ -215,4 +215,18 @@ class OrderType extends CommerceBundleEntityBase implements OrderTypeInterface {
     return OrderType::PROFILE_COMMON;
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function calculateDependencies() {
+    parent::calculateDependencies();
+
+    // The order type must depend on the module that provides the workflow.
+    $workflow_manager = \Drupal::service('plugin.manager.workflow');
+    $workflow = $workflow_manager->createInstance($this->getWorkflowId());
+    $this->calculatePluginDependencies($workflow);
+
+    return $this;
+  }
+
 }
